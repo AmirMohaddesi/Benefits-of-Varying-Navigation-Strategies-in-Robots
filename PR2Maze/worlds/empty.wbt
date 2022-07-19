@@ -1,0 +1,423 @@
+#VRML_SIM R2022a utf8
+WorldInfo {
+  optimalThreadCount 5
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.6605723734959377 0.7080027342637433 0.24975241269907072 3.1769008579538998
+  position -2.9626585507739804 63.935558924721974 -0.4008786032178673
+}
+LandscapePainting {
+  translation 11.4 1.5 15.9
+  rotation -0.5773502691896257 -0.5773502691896258 -0.5773502691896257 2.0943951023931957
+  textureUrl [
+    "https://images.unsplash.com/photo-1488654715439-fbf461f0eb8d?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80"
+  ]
+}
+LandscapePainting {
+  translation -2 1.5 15.9
+  rotation -0.5773502691896257 -0.5773502691896258 -0.5773502691896257 2.0943951023931957
+  name "landscape painting(4)"
+  textureUrl [
+    "http://www.wallpaperhi.com/thumbnails/detail/20111224/247258-1366x768.jpg"
+  ]
+}
+LandscapePainting {
+  translation -12 1.5 15.9
+  rotation -0.5773502691896257 -0.5773502691896258 -0.5773502691896257 2.0943951023931957
+  name "landscape painting(5)"
+  textureUrl [
+    "https://www.punjabidharti.com/wp-content/uploads/tdomf/8053/380604_440775375953277_888446233_n.jpg"
+  ]
+}
+LandscapePainting {
+  translation -15.9 1.5 9
+  rotation -2.3450800471167965e-06 0.7071067811846031 0.7071067811846031 3.141587963438951
+  name "landscape painting(6)"
+  textureUrl [
+    "https://c8.alamy.com/comp/W9R4T9/black-and-white-beutiful-liquid-ink-background-pattern-wallpaper-W9R4T9.jpg"
+  ]
+}
+LandscapePainting {
+  translation -15.9 1.5 -2
+  rotation -2.3450800471167965e-06 0.7071067811846031 0.7071067811846031 3.141587963438951
+  name "landscape painting(7)"
+  textureUrl [
+    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnd0ym9b0PjgIHCS-NIa9uar4jBPry2dQwzw&usqp=CAU"
+  ]
+}
+LandscapePainting {
+  translation -15.9 1.5 -12
+  rotation -2.3450800471167965e-06 0.7071067811846031 0.7071067811846031 3.141587963438951
+  name "landscape painting(8)"
+  textureUrl [
+    "https://cutewallpaper.org/21/hd-beautiful-wallpaper/Beautiful-Nature-wallpaper-Download-free-full-HD-.jpg"
+  ]
+}
+LandscapePainting {
+  translation -7 1.5 -15.9
+  rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931957
+  name "landscape painting(9)"
+  textureUrl [
+    "https://cutewallpaper.org/21/hd-beautiful-wallpaper/Beautiful-Nature-wallpaper-Download-free-full-HD-.jpg"
+  ]
+}
+LandscapePainting {
+  translation 3 1.5 -15.9
+  rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931957
+  name "landscape painting(10)"
+  textureUrl [
+    "https://c4.wallpaperflare.com/wallpaper/112/996/57/beutiful-nature-1920x1200-wallpaper-preview.jpg"
+  ]
+}
+LandscapePainting {
+  translation 15.9 1.5 -12
+  rotation -0.9999998413440285 0.000398316405530644 0.0003983164055307053 1.5707964854508807
+  name "landscape painting(1)"
+  textureUrl [
+    "https://cdn.wallpapersafari.com/23/34/nW5sh6.jpg"
+  ]
+}
+LandscapePainting {
+  translation 15.9 1.5 0
+  rotation -0.9999998413440285 0.000398316405530644 0.0003983164055307053 1.5707964854508807
+  name "landscape painting(2)"
+  textureUrl [
+    "https://cdn.wallpapersafari.com/63/82/xBbUn7.jpg"
+  ]
+}
+LandscapePainting {
+  translation 15.9 1.5 12
+  rotation -0.9999998413440285 0.000398316405530644 0.0003983164055307053 1.5707964854508807
+  name "landscape painting(3)"
+  textureUrl [
+    "https://wallpaperaccess.com/full/632201.jpg"
+  ]
+}
+LandscapePainting {
+  translation -3.4 1.5 4
+  rotation -0.00028060585633361205 -0.7071067533478779 -0.7071067533478779 3.14103144189182
+  name "landscape painting(11)"
+  textureUrl [
+    "https://wallpaperaccess.com/full/632201.jpg"
+  ]
+}
+LandscapePainting {
+  translation 4 1.5 -2.4
+  rotation -0.5770446276658219 0.5775030292916278 0.5775030292916278 2.094853625354853
+  name "landscape painting(12)"
+  textureUrl [
+    "https://wallpaperaccess.com/full/632201.jpg"
+  ]
+}
+LandscapePainting {
+  translation 11.4 1.5 6
+  rotation -0.9999998435720124 0.00039550976640944887 0.0003955097664095101 1.5707964832228964
+  name "landscape painting(13)"
+  textureUrl [
+    "https://wallpaperaccess.com/full/632201.jpg"
+  ]
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+  castShadows FALSE
+}
+RectangleArena {
+  rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931957
+  floorSize 32 32
+  floorTileSize 1 1
+  wallHeight 4
+}
+Solid {
+  translation 12 0.5 0
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 1 4 27
+      }
+    }
+  ]
+  boundingObject USE box
+}
+Solid {
+  translation 4 0.5 12
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 9 4 3
+      }
+    }
+  ]
+  name "solid(1)"
+  boundingObject USE box
+}
+Solid {
+  translation 4 0.5 4
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 9 4 7
+      }
+    }
+  ]
+  name "solid(4)"
+  boundingObject USE box
+}
+Solid {
+  translation 4 0.5 -10
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 9 4 7
+      }
+    }
+  ]
+  name "solid(10)"
+  boundingObject USE box
+}
+Solid {
+  translation -12.5 0.5 -10
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 2 4 7
+      }
+    }
+  ]
+  name "solid(13)"
+  boundingObject USE box
+}
+Solid {
+  translation 4 0.5 -3
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 9 4 1
+      }
+    }
+  ]
+  name "solid(7)"
+  boundingObject USE box
+}
+Solid {
+  translation -6 0.5 -3
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 5 4 1
+      }
+    }
+  ]
+  name "solid(8)"
+  boundingObject USE box
+}
+Solid {
+  translation -6 0.5 -7
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 5 4 1
+      }
+    }
+  ]
+  name "solid(11)"
+  boundingObject USE box
+}
+Solid {
+  translation -6 0.5 -12
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 5 4 3
+      }
+    }
+  ]
+  name "solid(12)"
+  boundingObject USE box
+}
+Solid {
+  translation -12.5 0.5 -3
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 2 4 1
+      }
+    }
+  ]
+  name "solid(9)"
+  boundingObject USE box
+}
+Solid {
+  translation -6 0.5 4
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 5 4 7
+      }
+    }
+  ]
+  name "solid(5)"
+  boundingObject USE box
+}
+Solid {
+  translation -12.5 0.5 4
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 2 4 7
+      }
+    }
+  ]
+  name "solid(6)"
+  boundingObject USE box
+}
+Solid {
+  translation -6 0.5 12
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 5 4 3
+      }
+    }
+  ]
+  name "solid(2)"
+  boundingObject USE box
+}
+Solid {
+  translation -12.5 0.5 12
+  children [
+    DEF box Shape {
+      appearance PBRAppearance {
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 2 4 3
+      }
+    }
+  ]
+  name "solid(3)"
+  boundingObject USE box
+}
+Pedestrian {
+  translation 15.465 1.27 -15.4925
+  rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931957
+  shirtColor 0.5 0.2 0.2
+}
+BunchOfSunFlowers {
+  translation 15.75 0 15.75
+  rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931957
+}
+DEF PR21 Pr2 {
+  translation -17 0 -27
+  rotation 1 0 0 -1.57
+  name "PR21"
+  controller "SpikeWave"
+  controllerArgs [
+    "1"
+  ]
+  customData "NULL"
+  supervisor TRUE
+  selfCollision TRUE
+}
+DEF PR22 Pr2 {
+  translation -17 0 -29
+  rotation 1 0 0 -1.57
+  name "PR22"
+  controller "SpikeWave"
+  controllerArgs [
+    "2"
+  ]
+  customData "NULL"
+  supervisor TRUE
+  selfCollision TRUE
+}
+DEF PR23 Pr2 {
+  translation -17 0 -31
+  rotation 1 0 0 -1.57
+  name "PR23"
+  controller "SpikeWave"
+  controllerArgs [
+    "3"
+  ]
+  customData "NULL"
+  supervisor TRUE
+  selfCollision TRUE
+}
+DEF PR24 Pr2 {
+  translation -17 0 -33
+  rotation 1 0 0 -1.57
+  name "PR24"
+  controller "SpikeWave"
+  controllerArgs [
+    "4"
+  ]
+  customData "NULL"
+  supervisor TRUE
+  selfCollision TRUE
+}
+DEF PR25 Pr2 {
+  translation -17 0 -35
+  rotation 1 0 0 -1.57
+  name "PR25"
+  controller "SpikeWave"
+  controllerArgs [
+    "5"
+  ]
+  customData "NULL"
+  supervisor TRUE
+  selfCollision TRUE
+}

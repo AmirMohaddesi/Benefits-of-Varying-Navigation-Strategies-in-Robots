@@ -1,0 +1,1112 @@
+/*
+ * Copyright 1996-2020 Cyberbotics Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <webots/Camera.hpp>
+#include <webots/Device.hpp>
+#include <webots/InertialUnit.hpp>
+#include <webots/Motor.hpp>
+#include <webots/PositionSensor.hpp>
+#include <webots/Robot.hpp>
+#include <webots/TouchSensor.hpp>
+#include <webots/Lidar.hpp>
+#include <webots/Supervisor.hpp>
+
+
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <string>
+#include <time.h>
+// #include <cfloat>
+// #include <cmath>
+
+using namespace webots;
+using namespace std;
+
+#define TIME_STEP 16
+#define BASE_SPEED 2.5
+#define LIDAR_THRESHOLD 2
+#define DELAY 4.0
+
+#define MAX_WHEEL_SPEED 3.0        // maximum velocity for the wheels [rad / s]
+#define WHEELS_DISTANCE 0.4492     // distance between 2 caster wheels (the four wheels are located in square) [m]
+#define SUB_WHEELS_DISTANCE 0.098  // distance between 2 sub wheels of a caster wheel [m]
+#define WHEEL_RADIUS 0.08          // wheel radius
+
+#define PLATFORM_X 64
+#define PLATFORM_Z 64
+
+#define N_GOALS 11
+
+#define THISNODE "PR22"
+
+// function to check if a double is almost equal to another
+#define TOLERANCE 0.05  // arbitrary value
+#define ALMOST_EQUAL(a, b) ((a < b + TOLERANCE) && (a > b - TOLERANCE))
+
+void delayRule(vector< vector < vector < vector <float> > > > &wgt, int fExcXi , int fExcYi , int Ne1, int Ne2, int value, float learnRate);
+void getPath(vector < vector < int > > spks, int** map, int sx, int sy, int ex, int ey );
+void calculateDirection();
+static void robotGoForward(Supervisor * robot, double distance);
+static void robotRotate(Supervisor* robot, double angle);
+// gaussian function
+double gaussian(double x, double mu, double sigma) {
+  return (1.0 / (sigma * sqrt(2.0 * M_PI))) * exp(-((x - mu) * (x - mu)) / (2 * sigma * sigma));
+}
+
+enum { FLL_WHEEL, FLR_WHEEL, FRL_WHEEL, FRR_WHEEL, BLL_WHEEL, BLR_WHEEL, BRL_WHEEL, BRR_WHEEL };
+enum { FL_ROTATION, FR_ROTATION, BL_ROTATION, BR_ROTATION };
+enum { SHOULDER_ROLL, SHOULDER_LIFT, UPPER_ARM_ROLL, ELBOW_LIFT, WRIST_ROLL };
+enum { NORTH, NORTHWEST, WEST, SOUTHWEST, SOUTH, SOUTHEAST, EAST, NORTHEAST};
+
+Motor * wheelMotors[8];
+PositionSensor * wheelSensors[8];
+Motor * rotationMotors[4];
+PositionSensor * rotationSensors[4];
+Motor * leftArmMotors[5];
+PositionSensor * leftArmSensors[5];
+Motor * rightArmMotors[5];
+PositionSensor * rightArmSensors[5];
+Lidar * laserTilt;
+Lidar * baseLaser;
+InertialUnit * imuSensor;
+
+Supervisor * robot;
+Node ** robotNodes;
+Field ** transFields;
+Field ** customDataFields;
+const double **transValues;
+
+int X_GOAL[N_GOALS];
+int Z_GOAL[N_GOALS];
+int xGoal;
+int zGoal;
+int path[2][1000];//some arbitrary value that we assume the path lenght wouldn't exceed it
+int *xCur;
+int *zCur;
+double headDirection = NORTH;
+double yaw;
+double *braitenbergCoefficients;
+bool obstacle = false;
+bool startingState = false;
+int lidarWidth;
+double lidarMaxRange;
+double leftSpeed; 
+double rightSpeed;
+int pathTurnsIdx[2][1000];
+int endIdx;
+int numberOfRobots;
+double* distances;
+
+// Simpler step function
+static void step(Robot* robot) {
+  if (robot->step(TIME_STEP) == -1) {
+    exit(EXIT_SUCCESS);
+  }
+}
+
+// Retrieve all the pointers to the PR2 devices
+static void initializeDevices(Robot * robot) {
+  wheelMotors[FLL_WHEEL] = robot->getMotor("fl_caster_l_wheel_joint");
+  wheelMotors[FLR_WHEEL] = robot->getMotor("fl_caster_r_wheel_joint");
+  wheelMotors[FRL_WHEEL] = robot->getMotor("fr_caster_l_wheel_joint");
+  wheelMotors[FRR_WHEEL] = robot->getMotor("fr_caster_r_wheel_joint");
+  wheelMotors[BLL_WHEEL] = robot->getMotor("bl_caster_l_wheel_joint");
+  wheelMotors[BLR_WHEEL] = robot->getMotor("bl_caster_r_wheel_joint");
+  wheelMotors[BRL_WHEEL] = robot->getMotor("br_caster_l_wheel_joint");
+  wheelMotors[BRR_WHEEL] = robot->getMotor("br_caster_r_wheel_joint");
+  for (int i = FLL_WHEEL; i <= BRR_WHEEL; ++i)
+    wheelSensors[i] = wheelMotors[i]->getPositionSensor();
+
+  rotationMotors[FL_ROTATION] = robot->getMotor("fl_caster_rotation_joint");
+  rotationMotors[FR_ROTATION] = robot->getMotor("fr_caster_rotation_joint");
+  rotationMotors[BL_ROTATION] = robot->getMotor("bl_caster_rotation_joint");
+  rotationMotors[BR_ROTATION] = robot->getMotor("br_caster_rotation_joint");
+  for (int i = FL_ROTATION; i <= BR_ROTATION; ++i)
+    rotationSensors[i] = rotationMotors[i]->getPositionSensor();
+
+  leftArmMotors[SHOULDER_ROLL] = robot->getMotor("l_shoulder_pan_joint");
+  leftArmMotors[SHOULDER_LIFT] = robot->getMotor("l_shoulder_lift_joint");
+  leftArmMotors[UPPER_ARM_ROLL] = robot->getMotor("l_upper_arm_roll_joint");
+  leftArmMotors[ELBOW_LIFT] = robot->getMotor("l_elbow_flex_joint");
+  leftArmMotors[WRIST_ROLL] = robot->getMotor("l_wrist_roll_joint");
+  for (int i = SHOULDER_ROLL; i <= WRIST_ROLL; ++i)
+    leftArmSensors[i] = leftArmMotors[i]->getPositionSensor();
+
+  rightArmMotors[SHOULDER_ROLL] = robot->getMotor("r_shoulder_pan_joint");
+  rightArmMotors[SHOULDER_LIFT] = robot->getMotor("r_shoulder_lift_joint");
+  rightArmMotors[UPPER_ARM_ROLL] = robot->getMotor("r_upper_arm_roll_joint");
+  rightArmMotors[ELBOW_LIFT] = robot->getMotor("r_elbow_flex_joint");
+  rightArmMotors[WRIST_ROLL] = robot->getMotor("r_wrist_roll_joint");
+  for (int i = SHOULDER_ROLL; i <= WRIST_ROLL; ++i)
+    rightArmSensors[i] = rightArmMotors[i]->getPositionSensor();
+
+  laserTilt = robot->getLidar("laser_tilt");  //todo
+  baseLaser = robot->getLidar("base_laser");
+  
+  imuSensor = robot->getInertialUnit("imu_sensor");
+}
+
+// enable the robot devices
+static void enableDevices() {
+  for (int i = 0; i < 8; ++i) {
+    wheelSensors[i]->enable(TIME_STEP);
+    // init the motors for speed control
+    wheelMotors[i]->setPosition(INFINITY);
+    wheelMotors[i]->setVelocity(0.0);
+  }
+
+  for (int i = 0; i < 4; ++i)
+    rotationSensors[i]->enable(TIME_STEP);
+  
+  for (int i = 0; i < 5; ++i) {
+      leftArmSensors[i]->enable(TIME_STEP);
+      rightArmSensors[i]->enable(TIME_STEP);
+  }
+  
+  laserTilt->enable(TIME_STEP);
+  baseLaser->enable(TIME_STEP);
+  
+  imuSensor->enable(TIME_STEP);
+}
+
+// set the speeds of the robot wheels
+static void setWheelsSpeeds(double fll, double flr, double frl, double frr, double bll, double blr, double brl, double brr) {
+  wheelMotors[FLL_WHEEL]->setVelocity(fll);
+  wheelMotors[FLR_WHEEL]->setVelocity(flr);
+  wheelMotors[FRL_WHEEL]->setVelocity(frl);
+  wheelMotors[FRR_WHEEL]->setVelocity(frr);
+  wheelMotors[BLL_WHEEL]->setVelocity(bll);
+  wheelMotors[BLR_WHEEL]->setVelocity(blr);
+  wheelMotors[BRL_WHEEL]->setVelocity(brl);
+  wheelMotors[BRR_WHEEL]->setVelocity(brr);
+}
+
+static void setWheelsSpeed(double speed) {
+    setWheelsSpeeds(speed, speed, speed, speed, speed, speed, speed, speed);
+}
+
+static void stopWheels() {
+    setWheelsSpeeds(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+}
+
+// Set the rotation wheels angles.
+// If wait_on_feedback is true, the function is left when the rotational motors have reached their target positions.
+static void setRotationWheelsAngles(Robot* robot,double fl, double fr, double bl, double br, bool waitOnFeedback) {
+    if (waitOnFeedback) {
+        stopWheels();
+    }
+  
+    rotationMotors[FL_ROTATION]->setPosition(fl);
+    rotationMotors[FR_ROTATION]->setPosition(fr);
+    rotationMotors[BL_ROTATION]->setPosition(bl);
+    rotationMotors[BR_ROTATION]->setPosition(br);
+  
+    if (waitOnFeedback) {
+        double target[4] = {fl, fr, bl, br};
+    
+        while (true) {
+            bool allReached = true;
+            
+            for (int i = 0; i < 4; ++i) {
+                double currentPosition = rotationSensors[i]->getValue();
+                if (!ALMOST_EQUAL(currentPosition, target[i])) {
+                  allReached = false;
+                  break;
+                }
+            }
+      
+            if (allReached)
+                break;
+            else
+                step(robot);
+        }
+  
+    }
+}
+
+
+
+// Set the right arm position (forward kinematics)
+// If wait_on_feedback is enabled, the function is left when the target is reached.
+static void setRightArmPosition(double shoulder_roll, double shoulder_lift, double upper_arm_roll, double elbow_lift,
+                                   double wrist_roll, bool wait_on_feedback) {
+  rightArmMotors[SHOULDER_ROLL]->setPosition(shoulder_roll);
+  rightArmMotors[SHOULDER_LIFT]->setPosition(shoulder_lift);
+  rightArmMotors[UPPER_ARM_ROLL]->setPosition(upper_arm_roll);
+  rightArmMotors[ELBOW_LIFT]->setPosition(elbow_lift);
+  rightArmMotors[WRIST_ROLL]->setPosition(wrist_roll);
+
+  // if (wait_on_feedback) {
+    // while (!ALMOST_EQUAL(wb_position_sensor_get_value(right_arm_sensors[SHOULDER_ROLL]), shoulder_roll) ||
+           // !ALMOST_EQUAL(wb_position_sensor_get_value(right_arm_sensors[SHOULDER_LIFT]), shoulder_lift) ||
+           // !ALMOST_EQUAL(wb_position_sensor_get_value(right_arm_sensors[UPPER_ARM_ROLL]), upper_arm_roll) ||
+           // !ALMOST_EQUAL(wb_position_sensor_get_value(right_arm_sensors[ELBOW_LIFT]), elbow_lift) ||
+           // !ALMOST_EQUAL(wb_position_sensor_get_value(right_arm_sensors[WRIST_ROLL]), wrist_roll)) {
+      // step();
+    // }
+  // }
+}
+
+// Idem for the left arm
+static void setLeftArmPosition(double shoulder_roll, double shoulder_lift, double upper_arm_roll, double elbow_lift,
+                                  double wrist_roll, bool wait_on_feedback) {
+  leftArmMotors[SHOULDER_ROLL]->setPosition(shoulder_roll);
+  leftArmMotors[SHOULDER_LIFT]->setPosition(shoulder_lift);
+  leftArmMotors[UPPER_ARM_ROLL]->setPosition(upper_arm_roll);
+  leftArmMotors[ELBOW_LIFT]->setPosition(elbow_lift);
+  leftArmMotors[WRIST_ROLL]->setPosition(wrist_roll);
+
+  // if (wait_on_feedback) {
+    // while (!ALMOST_EQUAL(wb_position_sensor_get_value(left_arm_sensors[SHOULDER_ROLL]), shoulder_roll) ||
+           // !ALMOST_EQUAL(wb_position_sensor_get_value(left_arm_sensors[SHOULDER_LIFT]), shoulder_lift) ||
+           // !ALMOST_EQUAL(wb_position_sensor_get_value(left_arm_sensors[UPPER_ARM_ROLL]), upper_arm_roll) ||
+           // !ALMOST_EQUAL(wb_position_sensor_get_value(left_arm_sensors[ELBOW_LIFT]), elbow_lift) ||
+           // !ALMOST_EQUAL(wb_position_sensor_get_value(left_arm_sensors[WRIST_ROLL]), wrist_roll)) {
+      // step();
+    // }
+  // }
+}
+
+//Convenient initial position
+static void setInitialPosition(Robot * robot) {
+  setLeftArmPosition(0.0, 1.35, 0.0, -2.32, 0.0, false);
+  setRightArmPosition(0.0, 1.35, 0.0, -2.32, 0.0, false);
+
+  // setGripper(false, true, 0.0, false);
+  // setGripper(true, true, 0.0, false);
+
+  // setTorsoHeight(0.2, true);
+}
+
+void calculateDirection(){
+    double yaw = imuSensor->getRollPitchYaw()[2];
+    cout<<"Yaw is: "<<yaw<<endl;
+    headDirection = yaw;
+    cout<<"HeadDirection is :"<<headDirection*180/M_PI<< endl;
+    // if(yaw>-M_PI/8 && yaw<=M_PI/8){
+        // headDirection = NORTH;
+        // cout<<"HeadDirection is : NORTH"<< endl;
+    // }
+    // if(yaw>M_PI/4-M_PI/8 && yaw<=M_PI/4+M_PI/8){
+        // headDirection = NORTHWEST;
+        // cout<<"HeadDirection is : NORTHWEST"<< endl;
+    // }
+    // if(yaw>M_PI/2-M_PI/8 && yaw<=M_PI/2+M_PI/8){
+        // headDirection = WEST;
+        // cout<<"HeadDirection is : WEST"<< endl;
+    // }
+    // if(yaw>3*M_PI/4-M_PI/8 && yaw<=3*M_PI/4+M_PI/8){
+        // headDirection = SOUTHWEST;
+        // cout<<"HeadDirection is : SOUTHWEST"<< endl;
+    // }
+    // if(yaw>M_PI-M_PI/8 && yaw<=-M_PI+M_PI/8){
+        // headDirection = SOUTH;
+        // cout<<"HeadDirection is : SOUTH"<< endl;
+    // }
+    // if(yaw>-3*M_PI/4-M_PI/8 && yaw<=-3*M_PI/4+M_PI/8){
+        // headDirection = SOUTHEAST;
+        // cout<<"HeadDirection is : SOUTHEAST"<< endl;
+    // }
+    // if(yaw>-M_PI/2-M_PI/8 && yaw<=-M_PI/2+M_PI/8){
+        // headDirection = EAST;
+        // cout<<"HeadDirection is : EAST"<< endl;
+    // }
+    // if(yaw>-M_PI/4-M_PI/8 && yaw<=-M_PI/4+M_PI/8){
+        // headDirection = NORTHEAST;
+        // cout<<"HeadDirection is : NORTHEAST"<< endl;
+    // }
+    
+}
+
+int findIndex(double x){
+    if(floor(2*x+32)<0)
+      return 0;
+    if(floor(2*x+32)>63)
+      return 63;
+    return floor(2*x+32);
+} 
+
+void blockMap(int **map, int xBlock, int zBlock, int size){  //size is asssumed to be an odd number
+    for(int i = -size/2;i<=size/2;i++){
+        for(int j = -size/2;j<=size/2;j++){
+            if( (xBlock+i) < PLATFORM_X && (xBlock+i) > 0 && (zBlock+j) < PLATFORM_Z && (zBlock+j) > 0 )
+                map[xBlock+i][zBlock+j] += 100;
+        }
+    }
+    return;
+}
+
+void unBlockMap(int** map, int xBlock, int zBlock, int size){  //size is asssumed to be an odd number
+    for(int i = -size/2;i<=size/2;i++){
+        for(int j = -size/2;j<=size/2;j++){
+            if( (xBlock+i) < PLATFORM_X && (xBlock+i) > 0 && (zBlock+j) < PLATFORM_Z && (zBlock+j) > 0 )
+                map[xBlock+i][zBlock+j] -= 100;
+        }
+    }
+}
+
+void find2D(vector <int> &fExc2Dx, vector <int> &fExc2Dz, vector < vector <float> > &v, int spike,int sizeX, int sizeY, int gle){
+    
+
+    int count=0;
+    // cout<<"Hello 11 "<< v[1][29]<<endl;
+    for(int i=0;i<sizeX;i++){
+        for(int j=0;j<sizeY;j++){
+                // cout<<"Hello 12 "<< i<<" "<<j<<endl;
+            if(gle == 1 && v[i][j]>=spike){
+                fExc2Dx[count]=i;
+                fExc2Dz[count]=j;
+                count++;
+            }
+            if(gle == 0 && v[i][j]==spike){
+                fExc2Dx[count]=i;
+                fExc2Dz[count]=j;
+                count++;
+            }
+            if(gle == -1 && v[i][j]<=spike){
+                fExc2Dx[count]=i;
+                fExc2Dz[count]=j;
+                count++;    
+            }
+        }
+    }
+    
+    fExc2Dx[count] = -1;
+    fExc2Dz[count] = -1;
+}
+
+void find4D(vector <int> &fExc4Dx, vector <int> &fExc4Dz, vector< vector < vector < vector <int> > > > & delayBuffer,int k, int l ,int spike,int sizeX, int sizeY, int gle){
+    
+    int count=0;
+    // cout<<"Hello32 "<< count<<endl;
+    for(int i=0;i<sizeX;i++){
+        for(int j=0;j<sizeY;j++){
+            if(gle == 1 && delayBuffer[i][j][k][l]>=spike){
+                fExc4Dx[count]=i;
+                fExc4Dz[count]=j;
+                count++;
+            }
+            if(gle == 0 && delayBuffer[i][j][k][l]==spike){
+                fExc4Dx[count]=i;
+                fExc4Dz[count]=j;
+                count++;
+                // cout<<"Hello 9 "<< i<< j<<endl;
+            }
+            if(gle == -1 && delayBuffer[i][j][k][l]<=spike){
+                fExc4Dx[count]=i;
+                fExc4Dz[count]=j;
+                count++;
+            }
+        }
+    }
+    // cout<<"Hello42 "<< count<<endl;
+    fExc4Dx[count] = -1;
+    fExc4Dz[count] = -1;
+}
+
+void spikeWave(int xStart, int zStart, int xGoal,int zGoal, int** map, const int xMapSize, const int zMapSize){
+
+    const int Ne1 = xMapSize;
+    const int Ne2 = zMapSize;
+    int SPIKE = 1;
+    int REFRACTORY = -5;
+    int W_INIT = 5;
+    float LEARNING_RATE = 1.0;
+    
+    //Each neuron connects to its 8 neighbors
+    vector< vector < vector < vector <float> > > > wgt(Ne1 , vector < vector < vector <float> > > (Ne2, vector < vector <float> > (Ne1, vector <float> (Ne2 , 0.0) ) ) );
+        
+    for(int i = 0; i<Ne1; i++){
+        for(int j = 0; j<Ne2; j++){
+            for(int m = -1; m<=1; m++){
+                for(int n = -1; n<=1; n++){
+                    //if i+m > 0 && i+m <= size(wgt,1) && j+n > 0 && j+n <= size(wgt,2) && (m ~= 0 || n ~= 0)
+                    if ((m == 0 || n == 0) && m != n && i+m >= 0 && i+m < Ne1 && j+n >= 0 && j+n < Ne2){
+                        wgt[i][j][i+m][j+n] = W_INIT;
+                        // cout<<"HELLO 7 "<<wgt[i][j][i+m][j+n]<<endl;
+                        // cout<<"HELLO 8 "<<i<<" "<<j<<" "<<i+m<<" "<<j+n<<endl;
+                    }
+                }
+            }
+        }
+    }
+    
+    vector < vector <float> > v (Ne1 , vector <float> (Ne2 , 0.0));
+    vector < vector <float> > u (Ne1 , vector <float> (Ne2 , 0.0));
+
+         
+    vector< vector < vector < vector <int> > > > delayBuffer(Ne1 , vector < vector < vector <int> > > (Ne2, vector < vector <int> > (Ne1, vector <int> (Ne2 , 0) ) ) );
+      
+    //the spike wave is initiated from the starting location
+    v[xStart][zStart] = SPIKE;
+      // cout<<xStart<<zStart<<endl;
+    
+    bool foundGoal = false;
+    int timeSteps = 0;
+    vector < vector <int > > aer;
+    
+    while (!foundGoal){
+        
+        // if (timeSteps>= 100){
+            // //cout<<"babababbaa"<<endl;
+            // break;
+        // }
+        
+        
+        // for(vector<vector <int> >::iterator jt = aer.begin(); jt != aer.end(); ++jt ){
+              // cout<<"Hello41 "<<aer.size()<<endl;
+        // }
+        timeSteps = timeSteps + 1;
+        vector <int> fExc2Dx (Ne1*Ne2, 0);
+        vector <int> fExc2Dz (Ne1*Ne2, 0);
+        // cout<<"Hello41 "<<v[xStart][zStart]<<endl;
+        find2D(fExc2Dx, fExc2Dz, v, SPIKE, Ne1, Ne2, 1);// indices of spikes in v
+        // cout<<"Hello41 "<<fExc2Dx[0]<<endl;
+        for(int i=0;fExc2Dx[i]!=-1;i++){
+            vector<int> temp;
+            temp.push_back(timeSteps);
+            temp.push_back(fExc2Dx[i]);
+            temp.push_back(fExc2Dz[i]);
+            aer.push_back(temp); // keep spike information in an addressable event representation (spikeID and timeStep)
+        }
+        //Neurons that spike send their spike to their post-synaptic targets.
+        //The weights are updated and the spike goes in a delay buffer to
+        //targets. The neuron's recovery variable is set to its refractory value.
+        if (fExc2Dx[0] != -1){
+            for (int i = 0; fExc2Dx[i] != -1; i++){
+                u[fExc2Dx[i]][fExc2Dz[i]] = REFRACTORY;
+                delayRule(wgt,fExc2Dx[i],fExc2Dz[i],Ne1,Ne2,map[fExc2Dx[i]][fExc2Dz[i]], LEARNING_RATE);
+                for (int j=0; j<Ne2; j++){
+                    for (int k=0; k<Ne1; k++){
+                        delayBuffer[fExc2Dx[i]][fExc2Dz[i]][k][j] = round(wgt[fExc2Dx[i]][fExc2Dz[i]][k][j]);
+                        // cout<<"Hello9 "<<delayBuffer[fExc2Dx[i]][fExc2Dz[i]][k][j]<<endl;
+                    }
+                }
+                
+                if (fExc2Dx[i] == xGoal && fExc2Dz[i] == zGoal){
+                    foundGoal = true;   // neuron at goal location spiked.
+                }
+            }
+        }
+        
+        float Iexc[Ne1][Ne2];
+        
+        //if the spike wave is still propagating, get the synaptic input for
+        //all neurons. Synaptic input is based on recovery variable, and spikes
+        //that are arriving to the neuron at this time step.
+        vector <int> fExc4Dx (Ne1*Ne2, 0);
+        vector <int> fExc4Dz (Ne1*Ne2, 0);
+        if (!foundGoal){
+            for (int j=0; j<Ne2; j++){
+                for (int k=0; k<Ne1; k++){
+                    Iexc[k][j] = u[k][j];
+                }
+            }
+            for (int i=0; i<Ne1; i++){
+                for (int j=0; j<Ne2; j++){
+                    find4D( fExc4Dx, fExc4Dz, delayBuffer,i,j, 1, Ne1, Ne2, 0); // find indecies in delayBuffer
+                    // if(v[k][j]>=SPIKE)
+                    // cout<<"Hello2 "<<fExc4Dx[0]<<endl;
+                    if (fExc4Dx[0]!=-1){//is not empty
+                        // cout<<"Hello2 "<<fExc4Dx[0]<<endl;
+                        for(int k=0; fExc4Dx[k]!=-1; k++){
+                            // if(v[k][j]>=SPIKE)
+                                // cout<<"Hello2 "<<fExc4Dx[k]<<" "<< (wgt[fExc4Dx[k]][fExc4Dz[k]][i][j] > 0)<<endl;
+                            Iexc[i][j] = Iexc[i][j] + (wgt[fExc4Dx[k]][fExc4Dz[k]][i][j] > 0);
+                        }
+                    }
+                }
+            }
+            //Update membrane potential (v) and recovery variable (u)
+            for (int j=0; j<Ne2; j++){
+                for (int k=0; k<Ne1; k++){
+                    // if(v[k][j]>=SPIKE)
+                        // cout<<"Hello2 "<<k<<" "<<j<<endl;
+                    v[k][j] = v[k][j] + Iexc[k][j];
+                }
+            }
+            for (int j=0; j<Ne2; j++){
+                for (int k=0; k<Ne1; k++){
+                    u[k][j] = min(u[k][j] + 1, (float)0.0);
+                }
+            }
+        }
+   
+        for (int i=0; i<Ne1; i++){
+            for (int j=0; j<Ne2; j++){
+                for (int k=0; k<Ne1; k++){
+                    for (int l=0; l<Ne2; l++){
+                        delayBuffer[i][j][k][l] = max(0, delayBuffer[i][j][k][l] - 1);  // Update the delays of the scheduled spikes.
+                    }
+                }
+            }
+        }
+        
+    }
+    
+    getPath(aer, map, xStart, zStart, xGoal, zGoal); // Get the path from the AER table. 
+    
+// if dispWave
+    // pathLen = size(path,2);
+    // map(path(1).x,path(1).y) = 75;
+    // for i = 2:pathLen
+        // map(path(i).x,path(i).y) = 20;
+    // end
+    // map(path(end).x,path(end).y) = 50;
+    // imagesc(map);
+    // axis square;
+    // axis off;
+    // title(['Survey S(', num2str(startX), ',', num2str(startY), ') E(', num2str(endX), ',', num2str(endY), ')'])
+// end
+
+}
+
+
+// delayRule - Calculates a delta function for the weights. The weights hold
+  // the axonal delay between neurons.
+// //
+// @param wBefore - weight value before applying learning rule.
+// @param value - value from the map.
+// @param learnRate - learning rate.
+// @return - weight value after applying learning rule.
+void delayRule(vector< vector < vector < vector <float> > > > &wgt, int fExcXi , int fExcYi , int Ne1, int Ne2, int value, float learnRate){
+
+    float valMat[Ne1][Ne2];
+    for(int i=0; i < Ne1; i++){
+        for(int j=0; j <Ne2; j++){
+            valMat[i][j] = learnRate * (value - wgt[fExcXi][fExcYi][i][j]);
+            wgt[fExcXi][fExcYi][i][j] = wgt[fExcXi][fExcYi][i][j] + (wgt[fExcXi][fExcYi][i][j] > 0) * valMat[i][j];
+        }
+    }
+    return;
+}
+
+ // getPath - Generates the path based on the AER spike table. The spike
+   // table is ordered from earliest spike to latest. The algorithm starts at
+   // the end of the table and finds the most recent spike from a neighbor.
+   // This generates a near shortest path from start to end.
+ 
+ // @param spks - AER  table containing the spike time and ID of each neuron.
+ // @param map - map of the environment.
+ // @param s - start location.
+ // @param e - end (goal) location.
+ // @return - path from start to end.
+void getPath(vector < vector < int > > spks, int** map, int sx, int sy, int ex, int ey ){
+
+    // global START;
+    
+    int pinx = 0;
+    // for(vector<vector <int> >::iterator jt = spks.begin(); jt != aer.end(); ++jt ){
+        // cout<<"Hello5 "<<spks.size()<<endl;
+    // }
+    path[0][pinx] = ex;
+    path[1][pinx] = ey;
+    
+    // for (vector<vector <int> >::reverse_iterator it = spks.rbegin(); it != spks.rend(); ++it ){
+        // int i = (*it)[0];
+        // while((*it)[0] == i){
+            // it++;
+            // cout<<"okokokok "<<(*it)[1]<<" "<<(*it)[2]<<endl;
+        // }
+    // }
+    
+    while (sqrt(pow(path[0][pinx]-sx,2)+pow(path[1][pinx]-sy,2) > 1.0)){
+      
+        //work from most recent to oldest in the spike table
+        for (vector<vector <int> >::reverse_iterator it = spks.rbegin(); it != spks.rend(); ++it ){
+            int i = (*it)[0];
+            vector<vector <int> > inx;
+            while((*it)[0] == i){
+                inx.push_back(*it);
+                it++;
+            }
+            bool found = false;
+            int k = 0;
+            int lst[20][2];
+            //find the last spike from a neighboring neuron.
+            for(vector<vector <int> >::iterator jt = inx.begin(); jt != inx.end(); ++jt ){
+                // cout<<"Hello5 "<<sqrt(pow(path[0][pinx]-(*jt)[1],2)+pow(path[1][pinx]-(*jt)[2],2))<<" "<<(*jt)[1]<<" "<<(*jt)[2]<<endl;
+                if(sqrt(pow(path[0][pinx]-(*jt)[1],2)+pow(path[1][pinx]-(*jt)[2],2)) < 1.5 && sqrt(pow(path[0][pinx]-(*jt)[1],2)+pow(path[1][pinx]-(*jt)[2],2))>0.5){
+                    // cout<<"Hello3.5 "<<path[0][pinx]<<" "<<path[1][pinx]<<endl;
+                    // cout<<"Hello4.5 "<<k<<" "<<(*jt)[1]<<" "<<(*jt)[2]<<endl;
+                    lst[k][0] = (*jt)[1];
+                    lst[k][1] = (*jt)[2];
+                    k = k + 1;
+                    found = true;
+                }
+            }
+            
+            //if there is more then one spike, find the one with the lowest
+            //cost and closest to starting location.
+            
+            if(found){
+                int minx = 0;
+                int cost = INT_MAX;
+                float dist = (float) INT_MAX;
+                for(int m =0; m<k; m++){
+                    // cout<<"Hello5 "<<" "<<lst[0][0]<<endl;
+                    if (map[lst[m][0]][lst[m][1]] < cost){
+                        cost = map[lst[m][0]][lst[m][1]];
+                        minx = m;
+                        dist = sqrt(pow((sx - lst[m][0]),2)+pow((sy-lst[m][1]),2));
+                        // cout<<"Hello51 "<<endl;
+                    }
+                    else if (map[lst[m][0]][lst[m][1]] == cost && sqrt(pow((sx - lst[m][0]),2)+pow((sy-lst[m][1]),2)) < dist){
+                        minx = m;
+                        dist = sqrt(pow((sx - lst[m][0]),2)+pow((sy-lst[m][1]),2));
+                        // cout<<"Hello52 "<<endl;
+                    }
+                }
+                //add the neuron to the path.
+                pinx++;
+                path[0][pinx] = lst[minx][0];
+                path[1][pinx] = lst[minx][1];
+            }
+        }
+    }
+    pinx++;
+    path[0][pinx] = -1;
+    path[1][pinx] = -1;
+}
+
+void goForRInThisDirection(Supervisor * robot, double R, double angle){
+    if(abs(angle-headDirection)>M_PI){
+        if((angle-headDirection)>0)
+            robotRotate(robot,(angle-headDirection)-2*M_PI);
+        else
+            robotRotate(robot,(angle-headDirection)+2*M_PI);
+    }else{
+        robotRotate(robot,angle-headDirection);
+    }
+    robotGoForward(robot,R/2);
+}
+
+
+// High level function to rotate the robot around itself of a given angle [rad]
+// Note: the angle can be negative
+static void robotRotate(Supervisor* robot, double angle) {
+    stopWheels();
+    
+    setRotationWheelsAngles(robot,3.0 * M_PI_4, M_PI_4, -3.0 * M_PI_4, -M_PI_4, true);
+    const double maxWheelSpeed = angle > 0 ? MAX_WHEEL_SPEED : -MAX_WHEEL_SPEED;
+    setWheelsSpeed(maxWheelSpeed);
+  
+    double initialWheel0Position = wheelSensors[FLL_WHEEL]->getValue();
+    // expected travel distance done by the wheel
+    double expectedTravelDistance = fabs(angle * 0.5 * (WHEELS_DISTANCE + SUB_WHEELS_DISTANCE));
+  
+    while (true) {
+        double wheel0Position = wheelSensors[FLL_WHEEL]->getValue();
+        // travel distance done by the wheel
+        double wheel0TravelDistance = fabs(WHEEL_RADIUS * (wheel0Position - initialWheel0Position));
+    
+        if (wheel0TravelDistance > expectedTravelDistance)
+            break;
+    
+        // reduce the speed before reaching the target
+        if (expectedTravelDistance - wheel0TravelDistance < 0.025)
+            setWheelsSpeed(0.1 * maxWheelSpeed);
+    
+        step(robot);
+  }
+  calculateDirection();
+  // reset wheels
+  setRotationWheelsAngles(robot,0.0, 0.0, 0.0, 0.0, true);
+  stopWheels();
+}
+
+float minMidLidar(const float * lidarValues, int lidarWidth, int range){
+    float total = 0;
+    for (int i=(int)floor(0.5 * lidarWidth)-range/2;i<=(int)floor(0.5 * lidarWidth)+range/2;i++){
+        // lidarValues[i]<min ? min=lidarValues[i] : min=min;
+        total+= lidarValues[i];
+    }
+    return total/range;
+}
+
+// High level function to go forward for a given distance [m]
+// Note: the distance can be negative
+static void robotGoForward(Supervisor * robot, double distance) {
+    double maxWheelSpeed = distance > 0 ? MAX_WHEEL_SPEED : -MAX_WHEEL_SPEED;
+    setWheelsSpeed(maxWheelSpeed);
+    
+    double initialWheel0Position = wheelSensors[FLL_WHEEL]->getValue();
+    while (true) {
+        leftSpeed =  MAX_WHEEL_SPEED; 
+        rightSpeed =  MAX_WHEEL_SPEED;
+        
+        // get lidar values
+        const float *lidarValues = laserTilt->getRangeImage();
+        
+        // apply the braitenberg coefficients on the resulted values of the lidar
+        for (int i= 0.25 * lidarWidth; i < 0.5 * lidarWidth; i++) {
+            const int j = lidarWidth - i - 1;
+            const int k = i - 0.25 * lidarWidth;
+            float lidari = lidarValues[i];
+            float lidarj = lidarValues[j];
+            if (isinf(lidarValues[i]))
+                lidari = lidarMaxRange;
+            if (isinf(lidarValues[j]))
+                lidarj = lidarMaxRange;
+            leftSpeed +=
+              braitenbergCoefficients[k] * ((1.0 - lidari / lidarMaxRange) - (1.0 - lidarj / lidarMaxRange));
+            // printf("bc[%d]: %g, Lidar valuesi[%d]: %g, Lidar valuesj[%d]: %g\n", k, braitenberg_coefficients[k],i,lidar_values[i],j,lidar_values[j]);
+            
+            rightSpeed +=
+              braitenbergCoefficients[k] * ((1.0 - lidarj / lidarMaxRange) - (1.0 - lidari / lidarMaxRange));
+            // printf("bc[%d]: %g, Lidar valuesj[%d]: %g, Lidar valuesi[%d]: %g\n", k, braitenberg_coefficients[k],i,lidar_values[i],j,lidar_values[j]);
+          
+        }
+        for(int i=0;i<numberOfRobots;i++){
+            transFields[i] = robotNodes[i]->getField("translation");
+            transValues[i] = transFields[i]->getSFVec3f();
+            
+            xCur[i] = findIndex(transValues[i][0]);
+            zCur[i] = findIndex(transValues[i][2]);
+            
+            distances[i] = (double)sqrt(pow((xCur[i]-xCur[0]),2)+pow((zCur[i]-zCur[0]),2));
+        }
+        double minDis = 10000;
+        int argMinDis = -1;
+        for(int i=1;i<numberOfRobots;i++){
+            if(minDis>distances[i]){
+                minDis = distances[i];
+                argMinDis = i;
+            }
+        }
+        if(distance > 0){
+            if(minDis<3 && !(customDataFields[0]->getSFString().compare("NEW GOAL")==0) /*|| minMidLidar(lidarValues,lidarWidth,20)<(float)(lidarMaxRange/15)*/){
+                cout<<"Obstacle Detected 2"<<endl;
+                if (customDataFields[0]->getSFString().compare("FINDING NEW GOAL")==0){
+                    customDataFields[0]->setSFString("NEW GOAL"); 
+                    robotGoForward(robot,-0.5);
+                    obstacle = true;
+                    break;
+                }
+                
+                setWheelsSpeed(0);
+                int randomNumber = rand();
+                cout<<"here 2 "<<to_string(randomNumber)<<endl;
+                customDataFields[argMinDis]->setSFString(to_string(randomNumber));
+                cout<<"here 2 "<<endl;
+                while(customDataFields[0]->getSFString().compare("NULL")==0){
+                    robot->step(TIME_STEP);
+                }
+                // if(customDataFields[0]->getSFString.compare("NULL")==0){
+                    // customDataFields[argMinDis]->setSFString("Obstacle! go for another Goal.");
+                // }
+                if(randomNumber>stoi(customDataFields[0]->getSFString(),nullptr,10)){
+                    customDataFields[0]->setSFString("Waiting for other robot to resolve obstacle");
+                    customDataFields[argMinDis]->setSFString("FINDING NEW GOAL"); 
+                    double tmp;
+                    while(distances[argMinDis]<6){  
+                        transFields[argMinDis] = robotNodes[argMinDis]->getField("translation");
+                        transValues[argMinDis] = transFields[argMinDis]->getSFVec3f();
+                        
+                        xCur[argMinDis] = findIndex(transValues[argMinDis][0]);
+                        zCur[argMinDis] = findIndex(transValues[argMinDis][2]);
+                        
+                        tmp = distances[argMinDis];
+                        //might need to change this to be able to ckeck distance from all robots
+                        distances[argMinDis] = sqrt(pow((xCur[argMinDis]-xCur[0]),2)+pow((zCur[argMinDis]-zCur[0]),2));
+                        cout<<"Distance of obstacle 2 "<<distances[argMinDis]<<endl; 
+                        if(tmp > distances[argMinDis]){
+                              customDataFields[argMinDis]->setSFString("FINDING NEW GOAL"); //Bad Goal
+                        }
+                        robot->step(TIME_STEP);
+                    }
+                    customDataFields[0]->setSFString("NULL");
+                    customDataFields[argMinDis]->setSFString("NULL");
+                    setWheelsSpeed(maxWheelSpeed);
+                }else{
+                    obstacle = true;
+                    customDataFields[0]->setSFString("NEW GOAL");
+                    break;
+                }
+                // robotGoForward(robot,-0.5);
+                // setWheelsSpeed(maxWheelSpeed);
+            }
+            // else if(leftSpeed < rightSpeed - LIDAR_THRESHOLD){
+                // cout<<"LeftSpeed&rightSpeed1 "<<leftSpeed<<" "<<rightSpeed<<endl;
+                // robotRotate(robot,M_PI/2);
+                // robotGoForward(robot,0.5);
+                // robotRotate(robot,-M_PI/2);
+                // setWheelsSpeed(maxWheelSpeed);
+            // }
+            // else if(rightSpeed < leftSpeed - LIDAR_THRESHOLD){
+                // cout<<"LeftSpeed&rightSpeed2 "<<leftSpeed<<" "<<rightSpeed<<endl;
+                // robotRotate(robot,-M_PI/2);
+                // robotGoForward(robot,0.5);
+                // robotRotate(robot,M_PI/2);
+                // setWheelsSpeed(maxWheelSpeed);
+            // }
+        }
+        double wheel0Position = wheelSensors[FLL_WHEEL]->getValue();
+        // travel distance done by the wheel
+        double wheel0TravelDistance = fabs(WHEEL_RADIUS * (wheel0Position - initialWheel0Position));
+        // cout<<"travelled distance: "<< wheel0TravelDistance<<" "<<distance<<endl;
+        if (wheel0TravelDistance > fabs(distance))
+            break;
+    
+        // reduce the speed before reaching the target
+        if (fabs(distance) - wheel0TravelDistance < 0.025)
+            setWheelsSpeed(0.1 * maxWheelSpeed);
+    
+        step(robot);
+    }
+    stopWheels();
+}
+
+void findTurnsInPath(int m){ // m is the index of the end node in the path 
+    int j=0;
+    int xDiff,zDiff;
+    int xBase=xCur[0];
+    int zBase=zCur[0];
+    for(int i=m;i>=0;i--) {
+        int xNext = path[0][i];
+        int zNext = path[1][i];
+        xDiff = xNext-xBase;
+        zDiff = zNext-zBase;
+        do{
+            xBase = xNext;
+            zBase = zNext;
+            i--;
+            xNext = path[0][i];
+            zNext = path[1][i];
+            // cout<<"Hello20 "<<(xDiff==(xNext-xBase))<<endl;
+            // cout<<"Hello21 "<<(zDiff==(zNext-zBase))<<endl;
+        }while((xDiff==(xNext-xBase))&&(zDiff==(zNext-zBase)));
+        i++;
+        pathTurnsIdx[0][j] = xBase;
+        pathTurnsIdx[1][j] = zBase;
+        
+        cout<<"asdnmbasdjbasdjk "<<xBase<<" "<<zBase<<endl;
+        
+        // cout<<"Hello20 "<<pathTurnsIdx[0][j]<<endl;
+        // cout<<"Hello21 "<<pathTurnsIdx[1][j]<<endl;
+        j++;
+    }
+    return;
+}
+
+
+int main(int argc, char **argv) {
+    
+    startingState = true;
+    robot = new Supervisor();
+    ifstream ft("../RobotList.txt");
+    if (! ft) {
+        cout << "Error, file couldn't be opened" << endl;
+    }
+    string r;
+    vector<string> robotNames;
+    numberOfRobots = 0;
+    while(ft>>r){
+        numberOfRobots++;
+        robotNames.push_back(r);
+        
+    }  
+    ifstream ft2("../Goals.txt");
+    if (! ft2) {
+        cout << "Error, file couldn't be opened" << endl;
+    }
+    for(int i=0; i<N_GOALS; i++){
+        ft2 >> X_GOAL[i];
+        ft2 >> Z_GOAL[i];
+        cout<<"i: "<< i << "X_GOAL: "<<X_GOAL[i]<<" Z_GOAL: "<<Z_GOAL[i]<<endl;
+    }
+    robotNodes = new Node*[numberOfRobots];
+    transFields = new Field*[numberOfRobots];
+    customDataFields = new Field*[numberOfRobots];
+    transValues = new const double*[numberOfRobots];
+    xCur = new int[numberOfRobots];
+    zCur = new int[numberOfRobots];
+    distances = new double[numberOfRobots];
+     
+    int flag = 0;
+    for(int i=0; i<numberOfRobots; i++){
+        if (robotNames[i].compare(THISNODE)==0){
+            robotNodes[0] = robot->getFromDef(robotNames[i]);
+            customDataFields[0] = robotNodes[0]->getField("customData");
+            cerr<<"thisnode"<<endl;
+            flag++;
+        }else{
+            robotNodes[i-flag+1]=robot->getFromDef(robotNames[i]);
+            customDataFields[i-flag+1] = robotNodes[i-flag+1]->getField("customData");
+            cerr<<"thatnode"<<endl;
+        }
+    }
+    
+    if (robotNodes[0] == NULL) {
+        fprintf(stderr, "No DEF MY_ROBOT node found in the current world file\n");
+        exit(1);
+    }
+    
+    initializeDevices(robot);
+    enableDevices();
+    setInitialPosition(robot);
+    customDataFields[0]->setSFString("NULL");
+     // cout<<"Hello0.5"<<endl;
+    // //go to the initial position
+    // setLeftArmPosition(0.0, 0.5, 0.0, -0.5, 0.0, true);
+    // setRightArmPosition(0.0, 0.5, 0.0, -0.5, 0.0, true);
+    
+    // laserTilt->enablePointCloud();
+    // baseLaser->enablePointCloud();
+    
+    lidarWidth = laserTilt->getHorizontalResolution();
+    lidarMaxRange = laserTilt->getMaxRange();
+
+    
+    // init braitenberg coefficient
+    braitenbergCoefficients = (double *)malloc(sizeof(double) * lidarWidth);
+    
+    for (int i = 0; i < lidarWidth; i++){
+        braitenbergCoefficients[i] = 6 * gaussian(i, lidarWidth / 4, lidarWidth / 12);
+        // printf("bc: %g\n", braitenberg_coefficients[i]);
+    }
+    
+    
+    int* map[PLATFORM_X];
+    for (int i=0; i<PLATFORM_X; i++)
+         map[i] = (int *)malloc(PLATFORM_Z * sizeof(int));
+    ifstream fp("edited map2.txt");
+    if (! fp) {
+        cout << "Error, file couldn't be opened" << endl; 
+    }    
+    for(int row = 0; row < PLATFORM_X; row++) {  // stop loops if nothing to read
+        for(int column = 0; column < PLATFORM_Z; column++){
+            fp >> map[row][column];
+            if ( ! fp ) {
+                cout << "Error reading file for element " << row << "," << column << endl; 
+            }
+        }
+    }
+    
+    int j=0;
+    srand (time(NULL)+(intptr_t)(&j));
+    while (robot->step(TIME_STEP) != -1) {
+        
+        // otherRobotNode = robot->getFromDef(OTHERNODE);  //paused for now
+        // transField2 = otherRobotNode->getField("translation");
+        // transValue2 = transField2->getSFVec3f();
+        transFields[0] = robotNodes[0]->getField("translation");
+        transValues[0] = transFields[0]->getSFVec3f();
+        
+        xCur[0] = findIndex(transValues[0][0]);
+        zCur[0] = findIndex(transValues[0][2]);
+        if(obstacle || startingState){
+            int cGoal = rand() % N_GOALS;
+            xGoal = X_GOAL[cGoal];
+            zGoal = Z_GOAL[cGoal];
+            int xStart = xCur[0];
+            int zStart = zCur[0];
+            printf("%d %d, source index\n", xStart, zStart);
+            printf("%d %d %d, sink index\n", cGoal, xGoal, zGoal);
+            spikeWave(xStart, zStart, xGoal, zGoal, map, PLATFORM_X, PLATFORM_Z);
+           
+            cout<<"The Chosen Path is: "<<endl;
+            endIdx=0;
+            for(int i = 0; path[0][i]!=-1 ; i++) {  // stop loops if nothing to read
+                cout << path[0][i]<< " " << path[1][i] << endl;
+                endIdx =i;
+            }
+            if(endIdx==1){
+                cerr<<"path length is 1, Enter a further destination "<<endl;
+            }
+            findTurnsInPath(endIdx);
+            obstacle = false;
+            startingState = false;
+            j=0;
+        }
+        // if(obstacle){
+                // int xBlock,zBlock;
+                // xBlock = findIndex(transValue2[0]);
+                // zBlock = findIndex(transValue2[2]);
+                // blockMap(map, xBlock, zBlock,4);    //here 4 is the size of the block which is a 4x4 block of 1000s on the map
+                // cout<<"Block is Called"<<endl;
+                // cout<<xStart<<" "<<zStart<<" "<<xGoal<<" "<<zGoal<<endl;
+                // map[xStart][zStart] -= 100;
+                // spikeWave(xStart, zStart, xGoal, zGoal, map, PLATFORM_X, PLATFORM_Z);
+                // map[xStart][zStart] += 100;
+                // unBlockMap(map, xBlock, zBlock,4);    // we block the path temporarily to make the robot reroute the path to the goal
+                // cout<<"unBlock is Called"<<endl;
+            // }else{
+                // spikeWave(xStart, zStart, xGoal, zGoal, map, PLATFORM_X, PLATFORM_Z);
+            // }
+        int xNext;
+        int zNext;
+      
+        xNext = pathTurnsIdx[0][j];
+        zNext = pathTurnsIdx[1][j];
+        j++;
+        
+        double angle;
+        double distance = sqrt(pow((xNext-xCur[0]),2)+pow((zNext-zCur[0]),2));
+        
+        cout<<"Hello50 "<<xCur[0]<<" "<<zCur[0]<<endl;
+        cout<<"Hello51 "<<xNext<<" "<<zNext<<endl;
+        if((xNext-xCur[0]) != 0){
+            angle = -atan2((zNext-zCur[0]),(xNext-xCur[0]));
+            cout<<"Hello22 "<<-angle<<endl;
+        }
+        else if((zNext-zCur[0])>0){
+            cout<<"Hello40 "<<xCur[0]<<" "<<zCur[0]<<endl;
+            cout<<"Hello41 "<<xNext<<" "<<zNext<<endl;
+            angle = -M_PI/2;
+        }else{
+            cout<<"Hello40 "<<xCur[0]<<" "<<zCur[0]<<endl;
+            cout<<"Hello41 "<<xNext<<" "<<zNext<<endl;
+            angle = M_PI/2;
+        }
+        cout<<"Hello23 "<<(angle)<<" "<<headDirection<<endl;
+        goForRInThisDirection(robot,distance,angle);
+        endIdx--;
+        if(sqrt(pow((xGoal-xCur[0]),2)+pow((zGoal-zCur[0]),2))<=1){
+            cout<<"Robot Reached the Goal"<<endl;
+            startingState = true;
+        }  
+        // if(cGoal == N_GOALS){
+            // cout<<"Robot Reached the Final Goal"<<endl;
+            // stopWheels();
+            // break;
+        // } 
+
+        // if(headDirection == NORTHWEST+1)
+            // headDirection = NORTH;
+        // if(headDirection == NORTH-1)
+            // headDirection = NORTHWEST;
+        
+        //apply computed velocities
+        // printf("left speed: %g\n", leftSpeed);
+        // printf("right speed: %g\n", rightSpeed);
+        // printf("%g\n",lidarValues[(int)floor(0.5 * lidarWidth)]);
+      
+    };
+    
+    free(braitenbergCoefficients);
+
+        
+        
+    
+    // free(path[1]); //after using spikewave() we need to free path
+    // free(path[0]);
+    // free(path);
+    delete robot;
+   
+    return 0;
+}
