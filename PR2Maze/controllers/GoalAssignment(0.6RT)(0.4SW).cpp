@@ -53,11 +53,11 @@ int main()
         ofstream off("AssGoals"+std::to_string(yy+1)+".txt",ios::app);
 		if((rand()%10+1)<=6){
 			if(i<m){
-				for(int j=0 ; j!=a[i] ; j=(j+1)%n){
-					of<<j<<" ";
-				}	
+//				for(int j=0 ; j!=a[i] ; j=(j+1)%n){
+//					of<<j<<" ";
+//				}	
 			}else{
-				for(int l=a[i-m]+1;l!=a[i];l=(l+1)%n){
+				for(int l=(a[i-m]+1)%n;l!=a[i];l=(l+1)%n){
 					of<<l<<" ";
 				}
 			}

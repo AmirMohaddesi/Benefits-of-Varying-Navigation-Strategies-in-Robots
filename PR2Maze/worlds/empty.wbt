@@ -1,21 +1,29 @@
-#VRML_SIM R2022a utf8
+#VRML_SIM R2022b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/paintings/protos/LandscapePainting.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/robots/clearpath/pr2/protos/Pr2.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+
 WorldInfo {
+  FPS 30
   optimalThreadCount 5
   coordinateSystem "NUE"
 }
 Viewpoint {
-  orientation -0.6605723734959377 0.7080027342637433 0.24975241269907072 3.1769008579538998
-  position -2.9626585507739804 63.935558924721974 -0.4008786032178673
+  orientation -0.7007649066623601 0.7032271171063024 0.12000069731819234 2.9074727137352916
+  position -3.963490888096175 96.7473189884812 35.78545917714847
 }
 LandscapePainting {
-  translation 11.4 1.5 15.9
+  translation 22.9 3 31.9
   rotation -0.5773502691896257 -0.5773502691896258 -0.5773502691896257 2.0943951023931957
   textureUrl [
     "https://images.unsplash.com/photo-1488654715439-fbf461f0eb8d?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80"
   ]
 }
 LandscapePainting {
-  translation -2 1.5 15.9
+  translation -4 3 31.9
   rotation -0.5773502691896257 -0.5773502691896258 -0.5773502691896257 2.0943951023931957
   name "landscape painting(4)"
   textureUrl [
@@ -23,7 +31,7 @@ LandscapePainting {
   ]
 }
 LandscapePainting {
-  translation -12 1.5 15.9
+  translation -24 3 31.9
   rotation -0.5773502691896257 -0.5773502691896258 -0.5773502691896257 2.0943951023931957
   name "landscape painting(5)"
   textureUrl [
@@ -31,7 +39,7 @@ LandscapePainting {
   ]
 }
 LandscapePainting {
-  translation -15.9 1.5 9
+  translation -31.9 3 18
   rotation -2.3450800471167965e-06 0.7071067811846031 0.7071067811846031 3.141587963438951
   name "landscape painting(6)"
   textureUrl [
@@ -39,7 +47,7 @@ LandscapePainting {
   ]
 }
 LandscapePainting {
-  translation -15.9 1.5 -2
+  translation -31.9 3 -4
   rotation -2.3450800471167965e-06 0.7071067811846031 0.7071067811846031 3.141587963438951
   name "landscape painting(7)"
   textureUrl [
@@ -47,7 +55,7 @@ LandscapePainting {
   ]
 }
 LandscapePainting {
-  translation -15.9 1.5 -12
+  translation -31.9 3 -24
   rotation -2.3450800471167965e-06 0.7071067811846031 0.7071067811846031 3.141587963438951
   name "landscape painting(8)"
   textureUrl [
@@ -55,7 +63,7 @@ LandscapePainting {
   ]
 }
 LandscapePainting {
-  translation -7 1.5 -15.9
+  translation -14 3 -31.9
   rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931957
   name "landscape painting(9)"
   textureUrl [
@@ -63,7 +71,7 @@ LandscapePainting {
   ]
 }
 LandscapePainting {
-  translation 3 1.5 -15.9
+  translation 6 3 -31.9
   rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931957
   name "landscape painting(10)"
   textureUrl [
@@ -71,7 +79,7 @@ LandscapePainting {
   ]
 }
 LandscapePainting {
-  translation 15.9 1.5 -12
+  translation 31.9 3 -24
   rotation -0.9999998413440285 0.000398316405530644 0.0003983164055307053 1.5707964854508807
   name "landscape painting(1)"
   textureUrl [
@@ -79,7 +87,7 @@ LandscapePainting {
   ]
 }
 LandscapePainting {
-  translation 15.9 1.5 0
+  translation 31.9 3 0
   rotation -0.9999998413440285 0.000398316405530644 0.0003983164055307053 1.5707964854508807
   name "landscape painting(2)"
   textureUrl [
@@ -87,7 +95,7 @@ LandscapePainting {
   ]
 }
 LandscapePainting {
-  translation 15.9 1.5 12
+  translation 31.9 3 24
   rotation -0.9999998413440285 0.000398316405530644 0.0003983164055307053 1.5707964854508807
   name "landscape painting(3)"
   textureUrl [
@@ -95,7 +103,7 @@ LandscapePainting {
   ]
 }
 LandscapePainting {
-  translation -3.4 1.5 4
+  translation -6.9 3 8
   rotation -0.00028060585633361205 -0.7071067533478779 -0.7071067533478779 3.14103144189182
   name "landscape painting(11)"
   textureUrl [
@@ -103,7 +111,7 @@ LandscapePainting {
   ]
 }
 LandscapePainting {
-  translation 4 1.5 -2.4
+  translation 8 3 -4.9
   rotation -0.5770446276658219 0.5775030292916278 0.5775030292916278 2.094853625354853
   name "landscape painting(12)"
   textureUrl [
@@ -111,7 +119,7 @@ LandscapePainting {
   ]
 }
 LandscapePainting {
-  translation 11.4 1.5 6
+  translation 21.9 3 12
   rotation -0.9999998435720124 0.00039550976640944887 0.0003955097664095101 1.5707964832228964
   name "landscape painting(13)"
   textureUrl [
@@ -125,12 +133,12 @@ TexturedBackgroundLight {
 }
 RectangleArena {
   rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931957
-  floorSize 32 32
-  floorTileSize 1 1
+  floorSize 64 64
+  floorTileSize 2 2
   wallHeight 4
 }
 Solid {
-  translation 12 0.5 0
+  translation 24 2 0
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -138,14 +146,14 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 1 4 27
+        size 4 4 54
       }
     }
   ]
   boundingObject USE box
 }
 Solid {
-  translation 4 0.5 12
+  translation 8 2 24
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -153,7 +161,7 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 9 4 3
+        size 18 4 6
       }
     }
   ]
@@ -161,7 +169,7 @@ Solid {
   boundingObject USE box
 }
 Solid {
-  translation 4 0.5 4
+  translation 8 2 8
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -169,7 +177,7 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 9 4 7
+        size 18 4 14
       }
     }
   ]
@@ -177,7 +185,7 @@ Solid {
   boundingObject USE box
 }
 Solid {
-  translation 4 0.5 -10
+  translation 8 2 -20
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -185,7 +193,7 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 9 4 7
+        size 18 4 14
       }
     }
   ]
@@ -193,7 +201,7 @@ Solid {
   boundingObject USE box
 }
 Solid {
-  translation -12.5 0.5 -10
+  translation -25 2 -20
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -201,7 +209,7 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 2 4 7
+        size 4 4 14
       }
     }
   ]
@@ -209,7 +217,7 @@ Solid {
   boundingObject USE box
 }
 Solid {
-  translation 4 0.5 -3
+  translation 8 2 -6
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -217,7 +225,7 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 9 4 1
+        size 18 4 2
       }
     }
   ]
@@ -225,7 +233,7 @@ Solid {
   boundingObject USE box
 }
 Solid {
-  translation -6 0.5 -3
+  translation -12 2 -6
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -233,7 +241,7 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 5 4 1
+        size 10 4 2
       }
     }
   ]
@@ -241,7 +249,7 @@ Solid {
   boundingObject USE box
 }
 Solid {
-  translation -6 0.5 -7
+  translation -12 2 -14
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -249,7 +257,7 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 5 4 1
+        size 10 4 2
       }
     }
   ]
@@ -257,7 +265,7 @@ Solid {
   boundingObject USE box
 }
 Solid {
-  translation -6 0.5 -12
+  translation -12 2 -24
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -265,7 +273,7 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 5 4 3
+        size 10 4 6
       }
     }
   ]
@@ -273,7 +281,7 @@ Solid {
   boundingObject USE box
 }
 Solid {
-  translation -12.5 0.5 -3
+  translation -25 2 -6
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -281,7 +289,7 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 2 4 1
+        size 4 4 2
       }
     }
   ]
@@ -289,7 +297,7 @@ Solid {
   boundingObject USE box
 }
 Solid {
-  translation -6 0.5 4
+  translation -12 2 8
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -297,7 +305,7 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 5 4 7
+        size 10 4 14
       }
     }
   ]
@@ -305,7 +313,7 @@ Solid {
   boundingObject USE box
 }
 Solid {
-  translation -12.5 0.5 4
+  translation -25 2 8
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -313,7 +321,7 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 2 4 7
+        size 4 4 14
       }
     }
   ]
@@ -321,7 +329,7 @@ Solid {
   boundingObject USE box
 }
 Solid {
-  translation -6 0.5 12
+  translation -12 2 24
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -329,7 +337,7 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 5 4 3
+        size 10 4 6
       }
     }
   ]
@@ -337,7 +345,7 @@ Solid {
   boundingObject USE box
 }
 Solid {
-  translation -12.5 0.5 12
+  translation -25 2 24
   children [
     DEF box Shape {
       appearance PBRAppearance {
@@ -345,24 +353,15 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 2 4 3
+        size 4 4 6
       }
     }
   ]
   name "solid(3)"
   boundingObject USE box
 }
-Pedestrian {
-  translation 15.465 1.27 -15.4925
-  rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931957
-  shirtColor 0.5 0.2 0.2
-}
-BunchOfSunFlowers {
-  translation 15.75 0 15.75
-  rotation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0943951023931957
-}
 DEF PR21 Pr2 {
-  translation -17 0 -27
+  translation -34 0 -54
   rotation 1 0 0 -1.57
   name "PR21"
   controller "SpikeWave"
@@ -374,10 +373,10 @@ DEF PR21 Pr2 {
   selfCollision TRUE
 }
 DEF PR22 Pr2 {
-  translation -17 0 -29
+  translation -34 0 -58
   rotation 1 0 0 -1.57
   name "PR22"
-  controller "SpikeWave"
+  controller "<none>"
   controllerArgs [
     "2"
   ]
@@ -386,10 +385,10 @@ DEF PR22 Pr2 {
   selfCollision TRUE
 }
 DEF PR23 Pr2 {
-  translation -17 0 -31
+  translation -34 0 -62
   rotation 1 0 0 -1.57
   name "PR23"
-  controller "SpikeWave"
+  controller "<none>"
   controllerArgs [
     "3"
   ]
@@ -398,10 +397,10 @@ DEF PR23 Pr2 {
   selfCollision TRUE
 }
 DEF PR24 Pr2 {
-  translation -17 0 -33
+  translation -34 0 -66
   rotation 1 0 0 -1.57
   name "PR24"
-  controller "SpikeWave"
+  controller "<none>"
   controllerArgs [
     "4"
   ]
@@ -410,10 +409,10 @@ DEF PR24 Pr2 {
   selfCollision TRUE
 }
 DEF PR25 Pr2 {
-  translation -17 0 -35
+  translation -34 0 -70
   rotation 1 0 0 -1.57
   name "PR25"
-  controller "SpikeWave"
+  controller "<none>"
   controllerArgs [
     "5"
   ]

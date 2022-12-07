@@ -38,7 +38,7 @@
 using namespace webots;
 using namespace std;
 
-#define TIME_STEP 16
+#define TIME_STEP 32
 #define BASE_SPEED 2.5
 #define LIDAR_THRESHOLD 2
 #define DELAY 4.0
@@ -125,7 +125,7 @@ bool foundCollision;
 int areaOccupancy[PLATFORM_X][PLATFORM_Z] = { 0 };
 int nRobotObs = 0;    //Number of Robot obstacles
 int nWallObs = 0;     //Number of Wall obstacles
-
+int robotNumbers[5];
 // Simpler step function
 static void step(Robot* robot) {
   if (robot->step(TIME_STEP) == -1) {
@@ -309,9 +309,9 @@ static void setInitialPosition(Robot * robot) {
 
 void calculateDirection(){
     double yaw = imuSensor->getRollPitchYaw()[2];
-    cout<<"Yaw is: "<<yaw<<endl;
+    // cout<<"Yaw is: "<<yaw<<endl;
     headDirection = yaw;
-    cout<<"HeadDirection is :"<<headDirection*180/M_PI<< endl;
+    // cout<<"HeadDirection is :"<<headDirection*180/M_PI<< endl;
     // if(yaw>-M_PI/8 && yaw<=M_PI/8){
         // headDirection = NORTH;
         // cout<<"HeadDirection is : NORTH"<< endl;
@@ -352,11 +352,11 @@ int findIndex(double x){
       return 0;
     if(floor(2*x+32)>63)
       return 63;*/
-    return floor(2*x+32);
+    return floor(x+32);
 } 
 
 double findPosition(int x){
-    return (double)((x-31.5)/(double)2);
+    return (double)(x-31.5);
 }
 
 void blockMap(int **map, int xBlock, int zBlock, int size, int xUBlock, int zUBlock, int sizeU){  //size is asssumed to be an odd number
@@ -706,7 +706,7 @@ void goForRInThisDirection(Supervisor * robot, double R, double angle){
     }else{
         robotRotate(robot,angle-headDirection);
     }
-    robotGoForward(robot,R/2);
+    robotGoForward(robot,R);
 }
 
 
@@ -813,11 +813,11 @@ static void robotGoForward(Supervisor * robot, double distance) {
             }
         }
         if((minMidLidar(lidarValues,lidarWidth,20)<(float)(lidarMaxRange/35)) && distance > 0){
-            customDataFields[0]->setSFString("OBSTACLE"); 
+            // customDataFields[0]->setSFString("OBSTACLE"); 
             cout<<"Obstacle: a wall or something in front of robot"<<endl;
             nWallObs++;
-            xBlock = -1;
-            zBlock = -1;
+            // xBlock = -1;
+            // zBlock = -1;
             obstacle = true;
             robotGoForward(robot,-0.5);
             setWheelsSpeed(0);
@@ -825,11 +825,11 @@ static void robotGoForward(Supervisor * robot, double distance) {
         }
         int l = checkLidarForObs(lidarValues,lidarWidth,(lidarMaxRange/20));
         if(l != -1 && distance > 0){
-            customDataFields[0]->setSFString("OBSTACLE"); 
+            // customDataFields[0]->setSFString("OBSTACLE"); 
             cout<<"Obstacle: a wall or something besides the robot"<<endl;
             nWallObs++;
-            xBlock = -1;
-            zBlock = -1;
+            // xBlock = -1;
+            // zBlock = -1;
             obstacle = true;
             if(l<lidarWidth/2){
             robotGoForward(robot,-0.5);
@@ -842,18 +842,18 @@ static void robotGoForward(Supervisor * robot, double distance) {
             break;
         }
         
-        if(customDataFields[0]->getSFString().compare("FINDING NEW PATH")==0 && argTRRef != -1 && distance > 0){  //third robot point of referrence to let go of third robot status
-            if(customDataFields[argTRRef]->getSFString().compare("NULL")==0 ){
-                customDataFields[0]->setSFString("NULL");
-                argTRRef = -1;
-                argCFRobot = -1;
-            }
-        }
+        // if(customDataFields[0]->getSFString().compare("EXPLORE")==0 && argTRRef != -1 && distance > 0){  //third robot point of referrence to let go of third robot status
+            // if(customDataFields[argTRRef]->getSFString().compare("NULL")==0 ){
+                // customDataFields[0]->setSFString("NULL");
+                // argTRRef = -1;
+                // argCFRobot = -1;
+            // }
+        // }
         
         if(customDataFields[0]->getSFString().compare("NULL")==0 && !foundCollision){
             for(int i=1;i<numberOfRobots;i++){
-                if((customDataFields[i]->getSFString().compare("FINDING NEW PATH")==0
-                    || customDataFields[i]->getSFString().compare("Waiting for other robot to resolve obstacle")==0)
+                if((customDataFields[i]->getSFString().compare("EXPLORE")==0
+                    || customDataFields[i]->getSFString().compare("WAITING")==0)
                     && distance > 0 && distances[i]<25 ){
                     
                     xBlock = xCur[i];
@@ -866,21 +866,17 @@ static void robotGoForward(Supervisor * robot, double distance) {
             }
         }
         
+        if(customDataFields[0]->getSFString().compare("NULL")==0 && argCFRobot!=-1){
+            argCFRobot=-1;
+            setWheelsSpeed(maxWheelSpeed);
+        }
+        
         
         if(distance > 0){
-            if(minDis<7 && !(customDataFields[0]->getSFString().compare("FINDING NEW PATH")==0)){
+            if(minDis<7 && argMinDis != argCFRobot){
                 cout<<"Obstacle Detected "<<thisNode<<endl;
                 nRobotObs++;
-                if((customDataFields[argMinDis]->getSFString().compare("FINDING NEW PATH")==0 ||
-                   customDataFields[argMinDis]->getSFString().compare("Waiting for other robot to resolve obstacle")==0 ) && argCFRobot != argMinDis){
-                    cout<<"third robot comes in..."<<endl;
-                    customDataFields[0]->setSFString("FINDING NEW PATH");
-                    argTRRef = argMinDis;
-                    xBlock = xCur[argMinDis];
-                    zBlock = zCur[argMinDis];
-                    obstacle = true;
-                    break;
-                }
+                
                 
                 transFields[argMinDis] = robotNodes[argMinDis]->getField("translation");
                 transValues[argMinDis] = transFields[argMinDis]->getSFVec3f();
@@ -891,52 +887,138 @@ static void robotGoForward(Supervisor * robot, double distance) {
                 xBlock = xCur[argMinDis];
                 zBlock = zCur[argMinDis];
                 
-                setWheelsSpeed(0);
-                int randomNumber = rand();
-                cout<<"Robot "<<thisNode<<" here 1 "<<to_string(randomNumber)<<endl;
-                customDataFields[argMinDis]->setSFString(to_string(randomNumber));
                 
-                while(customDataFields[0]->getSFString().compare("NULL")==0){
-                    robot->step(TIME_STEP);
-                }
-                cout<<"Robot "<<thisNode<<" here 2 "<<customDataFields[0]->getSFString()<<endl;
-                if(randomNumber>stoi(customDataFields[0]->getSFString(),nullptr,10)){
-                    customDataFields[0]->setSFString("Waiting for other robot to resolve obstacle");
+                if((customDataFields[0]->getSFString().compare("NULL")==0 && 
+                customDataFields[argMinDis]->getSFString().compare("NULL")==0) || 
+                (customDataFields[0]->getSFString().compare("EXPLORE")==0 && 
+                customDataFields[argMinDis]->getSFString().compare("EXPLORE")==0)){  
                     
-                    /* for(int i=1;i<numberOfRobots;i++){
-                        // if(i == argMinDis)
-                          // continue;
-                        // if(distances[i]<25 && customDataFields[i]->getSFString().compare("NULL")==0){
-                            // customDataFields[i]->setSFString("BLOCK AT "+to_string(xCur[0])+" "+to_string(zCur[0])); 
-                        // }
-                    }*/
-                    while(distances[argMinDis]<16){  
-                        transFields[argMinDis] = robotNodes[argMinDis]->getField("translation");
-                        transValues[argMinDis] = transFields[argMinDis]->getSFVec3f();
+                    // int randomNumber = rand();
+                    // cout<<"Robot "<<thisNode<<" here 1 "<<to_string(randomNumber)<<endl;
+                    // customDataFields[argMinDis]->setSFString(to_string(randomNumber));
+                    
+                    // while(customDataFields[0]->getSFString().compare("NULL")==0||customDataFields[0]->getSFString().compare("EXPLORE")==0){ //one thing that might happen is that one robot get stuck in this loop while the other one is somewhere else
+                        // robot->step(TIME_STEP);
+                    // }
+                    // cout<<"Robot "<<thisNode<<" here 2 "<<customDataFields[0]->getSFString()<<endl;
+                    // if(randomNumber>stoi(customDataFields[0]->getSFString(),nullptr,10)){
+                    if(robotNumbers[0]<robotNumbers[argMinDis]){ //the Robot with grater number would explore
+                        setWheelsSpeed(0);
+                        while(customDataFields[argMinDis]->getSFString().compare("NULL")==0){ //one thing that might happen is that one robot get stuck in this loop while the other one is somewhere else
+                            robot->step(TIME_STEP);
+                        }
+                        customDataFields[0]->setSFString("WAITING");
                         
-                        xCur[argMinDis] = findIndex(transValues[argMinDis][0]);
-                        zCur[argMinDis] = findIndex(transValues[argMinDis][2]);
-                        
-                        //might need to change this to be able to ckeck distance from all robots
-                        distances[argMinDis] = sqrt(pow((xCur[argMinDis]-xCur[0]),2)+pow((zCur[argMinDis]-zCur[0]),2));
-                        
-                        robot->step(TIME_STEP);
+                        /*for(int i=1;i<numberOfRobots;i++){
+                            if(i == argMinDis)
+                              continue;
+                            if(distances[i]<25 && customDataFields[i]->getSFString().compare("NULL")==0){
+                                customDataFields[i]->setSFString("BLOCK AT "+to_string(xCur[0])+" "+to_string(zCur[0])); 
+                            }
+                        }*/
+                        while(minDis<16){  
+                            
+                            for(int i=0;i<numberOfRobots;i++){
+                                transFields[i] = robotNodes[i]->getField("translation");
+                                transValues[i] = transFields[i]->getSFVec3f();
+                                
+                                xCur[i] = findIndex(transValues[i][0]);
+                                zCur[i] = findIndex(transValues[i][2]);
+                                
+                                distances[i] = (double)sqrt(pow((xCur[i]-xCur[0]),2)+pow((zCur[i]-zCur[0]),2));
+                            }
+                            minDis = 10000;
+                            int argNMinDis = -1;
+                            for(int i=1;i<numberOfRobots;i++){
+                                if(minDis>distances[i]){
+                                    minDis = distances[i];
+                                    argNMinDis = i;
+                                }
+                            }
+                            if(argMinDis != argNMinDis){
+                                if(customDataFields[argMinDis]->getSFString().compare("WAITING")!=0)
+                                    customDataFields[argMinDis]->setSFString("NULL");
+                                argMinDis = argNMinDis;
+                            }
+                            if(customDataFields[0]->getSFString().compare("WAITING")==0 && customDataFields[argMinDis]->getSFString().compare("WAITING")==0 ){ //Explore-Waiting
+                                obstacle = true;
+                                break;
+                            }
+                            robot->step(TIME_STEP);
+                        }
+                        customDataFields[0]->setSFString("NULL");
+                        if(customDataFields[argMinDis]->getSFString().compare("WAITING")!=0)
+                            customDataFields[argMinDis]->setSFString("NULL");
+                        argCFRobot = -1;
+                        setWheelsSpeed(maxWheelSpeed);
+                        break;
+                    }else{
+                        customDataFields[0]->setSFString("EXPLORE"); 
+                        argCFRobot = argMinDis;
+                        obstacle = true;
+                        break;
                     }
-                    customDataFields[0]->setSFString("NULL");
-                    if(customDataFields[argMinDis]->getSFString().compare("NULL"))
-                        customDataFields[argMinDis]->setSFString("NULL");
-                    setWheelsSpeed(maxWheelSpeed);
-                }else{
-                    customDataFields[0]->setSFString("FINDING NEW PATH"); 
+                }else if(customDataFields[argMinDis]->getSFString().compare("NULL")==0){ //Explore-Null or Waiting-Null
+                    cout<<"Robot "<<thisNode<<" (EXPLORE_null)(WAITING_null)"<<endl;
+                    customDataFields[0]->setSFString("WAITING");
+                    setWheelsSpeed(0);
+                    while(minDis<16){  
+                            
+                            for(int i=0;i<numberOfRobots;i++){
+                                transFields[i] = robotNodes[i]->getField("translation");
+                                transValues[i] = transFields[i]->getSFVec3f();
+                                
+                                xCur[i] = findIndex(transValues[i][0]);
+                                zCur[i] = findIndex(transValues[i][2]);
+                                
+                                distances[i] = (double)sqrt(pow((xCur[i]-xCur[0]),2)+pow((zCur[i]-zCur[0]),2));
+                            }
+                            minDis = 10000;
+                            int argNMinDis = -1;
+                            for(int i=1;i<numberOfRobots;i++){
+                                if(minDis>distances[i]){
+                                    minDis = distances[i];
+                                    argNMinDis = i;
+                                }
+                            }
+                            if(argMinDis != argNMinDis){
+                                if(customDataFields[argMinDis]->getSFString().compare("WAITING")!=0)
+                                    customDataFields[argMinDis]->setSFString("NULL");
+                                argMinDis = argNMinDis;
+                            }
+                            if(customDataFields[0]->getSFString().compare("WAITING")==0 && customDataFields[argMinDis]->getSFString().compare("WAITING")==0 ){ //Explore-Waiting
+                                obstacle = true;
+                                break;
+                            }
+                            robot->step(TIME_STEP);
+                        }
+                        customDataFields[0]->setSFString("NULL");
+                        if(customDataFields[argMinDis]->getSFString().compare("WAITING")!=0)
+                            customDataFields[argMinDis]->setSFString("NULL");
+                        argCFRobot = -1;
+                        setWheelsSpeed(maxWheelSpeed);
+                        break;
+                }else if(customDataFields[0]->getSFString().compare("NULL")==0 ){ //Null-Explore or Null-Waiting
+                    cout<<"Robot "<< thisNode<<" (NULL_explore)(NULL_waiting)"<<endl;
+                    customDataFields[0]->setSFString("EXPLORE");
+                    argTRRef = argMinDis;
+                    argCFRobot = argMinDis;
+                    obstacle = true;
+                    break;
+                }else if(customDataFields[0]->getSFString().compare("EXPLORE")==0 && customDataFields[argMinDis]->getSFString().compare("WAITING")==0 ){ //Explore-Waiting
+                    cout<<"Robot "<< thisNode<<" (EXPLORE_waiting)"<<endl;
+                    customDataFields[0]->setSFString("EXPLORE");
+                    argTRRef = argMinDis;
                     argCFRobot = argMinDis;
                     obstacle = true;
                     break;
                 }
-            }else if(customDataFields[0]->getSFString().compare("OBSTACLE")==0){
-                obstacle = true;
-                customDataFields[0]->setSFString("NULL"); 
-                break;
             }
+            // else if(customDataFields[0]->getSFString().compare("OBSTACLE")==0){
+                // obstacle = true;
+                // customDataFields[0]->setSFString("NULL"); 
+                // break;
+            // }
             // else if(leftSpeed < rightSpeed - LIDAR_THRESHOLD){
                 // cout<<"LeftSpeed&rightSpeed1 "<<leftSpeed<<" "<<rightSpeed<<endl;
                 // robotRotate(robot,M_PI/2);
@@ -989,7 +1071,7 @@ void findTurnsInPath(int m){ // m is the index of the end node in the path
         pathTurnsIdx[0][j] = xBase;
         pathTurnsIdx[1][j] = zBase;
         
-        cout<<"asdnmbasdjbasdjk "<<xBase<<" "<<zBase<<endl;
+        cout<<"xBase: "<<xBase<<" zBase: "<<zBase<<endl;
         
         j++;
     }
@@ -1016,7 +1098,6 @@ int main(int argc, char **argv) {
     while(ft>>r){
         numberOfRobots++;
         robotNames.push_back(r);
-        
     }  
     ifstream ft1("../Sources.txt");
     if (! ft1) {
@@ -1050,6 +1131,7 @@ int main(int argc, char **argv) {
         cout<<"sadsad "<<(N_SOURCES/numberOfRobots)<< " "<<"PR2"+robotNames[i]<<endl;
         if (robotNames[i].compare(thisNode)==0){
             robotNodes[0] = robot->getFromDef("PR2"+robotNames[i]);
+            robotNumbers[0] = stoi(robotNames[i],nullptr,10);
             customDataFields[0] = robotNodes[0]->getField("customData");
             flag++;
             int cSource = (rand() % (N_SOURCES/numberOfRobots))+(N_SOURCES/numberOfRobots)*(stoi(thisNode,nullptr,10)-1);//stoi(thisNode,nullptr,10);
@@ -1061,6 +1143,7 @@ int main(int argc, char **argv) {
             it = find (robotNames.begin(), robotNames.end(), thisNode);
             if (it != robotNames.end()){
                 robotNodes[i-flag+1]=robot->getFromDef("PR2"+robotNames[i]);
+                robotNumbers[i-flag+1] = stoi(robotNames[i],nullptr,10);
                 customDataFields[i-flag+1] = robotNodes[i-flag+1]->getField("customData");
                 cerr<<"thatnode"<<endl;
             }else{
@@ -1142,8 +1225,9 @@ int main(int argc, char **argv) {
     while (robot->step(TIME_STEP) != -1) {
         
         fCCounter++;
-        if(fCCounter>20){  // reset the check for collision detector to 0 after certain amount of time
+        if(fCCounter>6000){  // reset the check for collision detector to 0 after certain amount of time
             foundCollision = false;
+            fCCounter = 0;
         }
         
         transFields[0] = robotNodes[0]->getField("translation");
@@ -1163,6 +1247,10 @@ int main(int argc, char **argv) {
                 // }else{
                     // cGoal = 1;
                 // }
+                if(g>13||g<-1){
+                  cerr<<"Error: out of boundry goal exists"<<endl;
+                  return 0;
+                }
                 if(g!=-1){
                     xGoal = X_GOAL[g];
                     zGoal = Z_GOAL[g];
@@ -1191,9 +1279,9 @@ int main(int argc, char **argv) {
             printf("%d %d, source index\n", xStart, zStart);
             printf("%d %d %d, sink index\n", cGoal, xGoal, zGoal);
             if(obstacle && xBlock!=-1){
-                blockMap(map, xBlock, zBlock, 9, xCur[0], zCur[0], 3);
+                blockMap(map, xBlock, zBlock, 3, xCur[0], zCur[0], 3);
                 result = spikeWave(xStart, zStart, xGoal, zGoal, map, PLATFORM_X, PLATFORM_Z);
-                unBlockMap(map, xBlock, zBlock, 9, xCur[0], zCur[0], 3);
+                unBlockMap(map, xBlock, zBlock, 3, xCur[0], zCur[0], 3);
             }else{
                 result = spikeWave(xStart, zStart, xGoal, zGoal, map, PLATFORM_X, PLATFORM_Z);
             }
@@ -1244,14 +1332,14 @@ int main(int argc, char **argv) {
             // cout<<"Hello41 "<<xNext<<" "<<zNext<<endl;
             angle = M_PI/2;
         }
-        cout<<"Robot "<<thisNode<<" Hello23 "<<(angle)<<" "<<headDirection<<endl;
+        // cout<<"Robot "<<thisNode<<" Hello23 "<<(angle)<<" "<<headDirection<<endl;
         goForRInThisDirection(robot,distance,angle);
         endIdx--;
         if(xGoal==xCur[0]&&zGoal==zCur[0]){
             cout<<"Robot "<<thisNode<<" Robot Reached the Goal"<<endl;
             // visitedGoals[cGoal] = true; 
             startingState = true;
-            if(customDataFields[0]->getSFString().compare("FINDING NEW PATH")==0)
+            if(customDataFields[0]->getSFString().compare("EXPLORE")==0)
                 obstacle = true;
         }  
         // for(int g=0; g<N_GOALS;g++){

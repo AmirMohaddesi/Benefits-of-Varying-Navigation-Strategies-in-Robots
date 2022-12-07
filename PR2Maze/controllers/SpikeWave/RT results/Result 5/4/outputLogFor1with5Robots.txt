@@ -1,3 +1,3 @@
-time to visit all goals: 1936.74
+time to visit all goals: 2050.37
 Number of Wall Obstacles 0
-Number of Robot Obstacles 3
+Number of Robot Obstacles 0
