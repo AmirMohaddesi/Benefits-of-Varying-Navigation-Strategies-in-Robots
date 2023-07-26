@@ -1,2 +1,2 @@
-# Benefits-of-varying-navigation-sterategies-in-robots 
+# Benefits of varying navigation strategies in teams of robots 
  
