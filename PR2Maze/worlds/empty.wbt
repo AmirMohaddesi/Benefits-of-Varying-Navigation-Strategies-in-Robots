@@ -376,7 +376,7 @@ DEF PR22 Pr2 {
   translation -34 0 -58
   rotation 1 0 0 -1.57
   name "PR22"
-  controller "<none>"
+  controller "SpikeWave"
   controllerArgs [
     "2"
   ]
@@ -388,7 +388,7 @@ DEF PR23 Pr2 {
   translation -34 0 -62
   rotation 1 0 0 -1.57
   name "PR23"
-  controller "<none>"
+  controller "SpikeWave"
   controllerArgs [
     "3"
   ]
@@ -400,7 +400,7 @@ DEF PR24 Pr2 {
   translation -34 0 -66
   rotation 1 0 0 -1.57
   name "PR24"
-  controller "<none>"
+  controller "SpikeWave"
   controllerArgs [
     "4"
   ]
@@ -412,7 +412,7 @@ DEF PR25 Pr2 {
   translation -34 0 -70
   rotation 1 0 0 -1.57
   name "PR25"
-  controller "<none>"
+  controller "SpikeWave"
   controllerArgs [
     "5"
   ]

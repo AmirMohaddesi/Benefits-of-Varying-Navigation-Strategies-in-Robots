@@ -1,0 +1,92 @@
+#VRML_SIM R2023a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/floors/protos/RectangleArena.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation 0.037777708921606375 -0.9890708779021287 -0.1425189222333193 5.759415874818989
+  position -0.8368549268959131 -0.05629632898593348 0.5210219861920488
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 10 10
+}
+DirectionalLight {
+  direction -1 -1 -1
+  intensity 3
+}
+Robot {
+  translation 0 0 0.16
+  rotation 0 1 0 0
+  children [
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0 -0.15 0
+      }
+      device [
+        RotationalMotor {
+          name "motor"
+        }
+      ]
+      endPoint DEF Inner_Solid Solid {
+        rotation 0 1 0 0
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColorMap ImageTexture {
+                url [
+                  "https://picsum.photos/500/500"
+                ]
+              }
+              metalness 0
+            }
+            geometry DEF Inner Sphere {
+              radius 0.125
+              subdivision 2
+            }
+          }
+        ]
+        name "Inner"
+        boundingObject USE Inner
+        physics Physics {
+        }
+      }
+    }
+    DEF Outer Shape {
+      appearance PBRAppearance {
+        baseColor 1 0 0
+        transparency 0.25
+        metalness 0
+      }
+      geometry DEF OUTER_GEO Sphere {
+        radius 0.15
+        subdivision 2
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 -1 0
+        anchor 0 0.15 0
+      }
+      device [
+        RotationalMotor {
+          name "motor2"
+        }
+      ]
+      endPoint SolidReference {
+        solidName "Inner"
+      }
+    }
+  ]
+  boundingObject USE OUTER_GEO
+  physics Physics {
+  }
+  controller "my_controller"
+}

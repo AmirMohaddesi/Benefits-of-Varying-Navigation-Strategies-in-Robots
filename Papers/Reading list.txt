@@ -1,0 +1,23 @@
+"Team of Robots":
+
+"Multi-Robot Systems: From Swarms to Intelligent Automata, Volume I" by G. Sukhatme, S. S. Sastry, and J. P. Ostrowski.
+"Distributed Coordination of Multi-Robot Teams: A Graph-Theoretic Approach" by M.J. Wakin, A. M. Bruckstein, and D. H. Shimkin.
+"Team Decision-Making Strategies for Multi-Robot Systems" by L. C. Jain and R. Murrieta-Cid.
+
+"Swarm of Robots":
+
+"An Introduction to Swarm Robotics" by X. Huang, L. Wang, and J. Tan.
+"Swarm Robotics: A Review from the Swarm Intelligence Perspective" by X. L. Liu, Y. J. Wang, and X. Y. Liu.
+"A Survey of Swarm Robotics" by D. Rus and B. Anderson.
+
+"Navigation in teams of robots":
+
+"Navigation in Teams of Robots: Distributed Cooperation and Coordination" by A. P. Schoellig, J. N. Hwang, and R. D'Andrea.
+"Collaborative Navigation in Dynamic Environments for Multi-Robot Teams" by A. C. Murillo and M. P. Wellman.
+"Distributed Navigation in Teams of Robots: Algorithms and Experiments" by J. B. Cortés, M. E. Valencia, and F. Bullo.
+
+"Human navigation strategies":
+
+"Human Navigation Strategies: A Review" by M. R. Montello and A. Lovelace.
+"The Psychology of Wayfinding: Human Navigation Strategies" by A. M. Avraamides and J. G. Trafton.
+"Navigation Strategies in Virtual Environments: A Review of the Literature" by T. K. Landers and C. A. Callaway.
