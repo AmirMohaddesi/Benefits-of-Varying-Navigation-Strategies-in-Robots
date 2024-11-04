@@ -390,7 +390,7 @@ void blockMap(int **map, int xBlock, int zBlock, int size, int xUBlock, int zUBl
     of.close();
     return;
 }
-
+// A function to change the a block to its original state
 void unBlockMap(int** map, int xBlock, int zBlock, int size, int xUBlock, int zUBlock, int sizeU){  //size is asssumed to be an odd number
     for(int i = -size/2;i<=size/2;i++){
         for(int j = -size/2;j<=size/2;j++){
@@ -401,6 +401,7 @@ void unBlockMap(int** map, int xBlock, int zBlock, int size, int xUBlock, int zU
     return;
 }
 
+//Find in a 2d vector 
 void find2D(vector <int> &fExc2Dx, vector <int> &fExc2Dz, vector < vector <float> > &v, int spike,int sizeX, int sizeY, int gle){
     
 
@@ -455,6 +456,7 @@ void find4D(vector <int> &fExc4Dx, vector <int> &fExc4Dz, vector< vector < vecto
     fExc4Dz[count] = -1;
 }
 
+//The Spikewave algorithm used to propagate signals through the grid map from start to goal
 bool spikeWave(int xStart, int zStart, int xGoal,int zGoal, int** map, const int xMapSize, const int zMapSize){
 
     const int Ne1 = xMapSize;
