@@ -9,6 +9,15 @@ This repository contains the source code, simulation environments, and analysis 
 
 The work is inspired by recent human navigation studies and investigates how **population variability** in navigation strategies affects multi-robot team performance.
 
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=vQg6a5GYKL8" target="_blank">
+    <img src="https://img.youtube.com/vi/vQg6a5GYKL8/maxresdefault.jpg" 
+         alt="Demo Video" width="720">
+  </a>
+</p>
+
+# Benefits of Varying Navigation Strategies in Teams of Robots
+
 ---
 
 ## 📖 Summary
