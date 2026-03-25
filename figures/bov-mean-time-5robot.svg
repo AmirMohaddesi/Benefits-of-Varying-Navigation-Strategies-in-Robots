@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 300" role="img" aria-labelledby="ttl dsc">
+  <title id="ttl">Mean time to complete goals  5-robot trials (from BOV.csv)</title>
+  <desc id="dsc">Bar heights are the mean of all Time taken (s) cells whose column names include 5Robot for each strategy group in the aggregated spreadsheet.</desc>
+  <rect width="520" height="300" fill="#fafafa"/>
+  <text x="260" y="30" text-anchor="middle" font-size="15" font-weight="600" fill="#1a1a1a" font-family="Segoe UI,system-ui,sans-serif">Mean mission time  5-robot trials</text>
+  <text x="260" y="50" text-anchor="middle" font-size="11" fill="#555" font-family="Segoe UI,system-ui,sans-serif">PR2Maze/controllers/SpikeWave/BOV.csv · row &quot;Time taken (s)&quot; · mean over 5-robot columns</text>
+  <line x1="48" y1="248" x2="472" y2="248" stroke="#333" stroke-width="1"/>
+  <text x="42" y="252" text-anchor="end" font-size="10" fill="#666" font-family="Segoe UI,system-ui,sans-serif">0</text>
+  <text x="42" y="178" text-anchor="end" font-size="10" fill="#666" font-family="Segoe UI,system-ui,sans-serif">1200</text>
+  <text x="42" y="108" text-anchor="end" font-size="10" fill="#666" font-family="Segoe UI,system-ui,sans-serif">2400</text>
+  <line x1="48" y1="248" x2="48" y2="68" stroke="#ccc" stroke-width="1"/>
+  <!-- SW 1097s -->
+  <rect x="58" y="166" width="88" height="82" fill="#2d6a4f" rx="3"/>
+  <text x="102" y="158" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a" font-family="Segoe UI,system-ui,sans-serif">1097 s</text>
+  <text x="102" y="268" text-anchor="middle" font-size="11" fill="#222" font-family="Segoe UI,system-ui,sans-serif">SW</text>
+  <!-- 0.4RT 0.6SW 1904s -->
+  <rect x="166" y="105" width="88" height="143" fill="#457b9d" rx="3"/>
+  <text x="210" y="97" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a" font-family="Segoe UI,system-ui,sans-serif">1904 s</text>
+  <text x="210" y="268" text-anchor="middle" font-size="10" fill="#222" font-family="Segoe UI,system-ui,sans-serif">0.4 RT / 0.6 SW</text>
+  <!-- 0.6RT 0.4SW 2202s -->
+  <rect x="274" y="83" width="88" height="165" fill="#a8dadc" rx="3"/>
+  <text x="318" y="75" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a" font-family="Segoe UI,system-ui,sans-serif">2202 s</text>
+  <text x="318" y="268" text-anchor="middle" font-size="10" fill="#222" font-family="Segoe UI,system-ui,sans-serif">0.6 RT / 0.4 SW</text>
+  <!-- RT 2212s -->
+  <rect x="382" y="82" width="88" height="166" fill="#6c757d" rx="3"/>
+  <text x="426" y="74" text-anchor="middle" font-size="11" font-weight="600" fill="#1a1a1a" font-family="Segoe UI,system-ui,sans-serif">2212 s</text>
+  <text x="426" y="268" text-anchor="middle" font-size="11" fill="#222" font-family="Segoe UI,system-ui,sans-serif">RT</text>
+  <text x="260" y="292" text-anchor="middle" font-size="10" fill="#777" font-family="Segoe UI,system-ui,sans-serif">Seconds (simulation-reported time to visit all goals)</text>
+</svg>
