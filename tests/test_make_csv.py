@@ -52,3 +52,19 @@ def test_read_efficiency_overlap(tmp_path: Path) -> None:
 def test_build_column_names_counts() -> None:
     cols = _make.build_column_names(["RT results", "SW results"])
     assert len(cols) == 2 * (5 + 15 + 25)
+
+
+def test_shipped_bov_csv_has_expected_metric_rows() -> None:
+    """Guardrail: committed aggregate matches the paper-facing analysis schema."""
+    bov = SPIKE_DIR / "BOV.csv"
+    assert bov.is_file(), "Expected PR2Maze/controllers/SpikeWave/BOV.csv in the repository"
+    df = pd.read_csv(bov, index_col=0, nrows=20)
+    assert "Time taken (s)" in df.index
+    assert "Area occupancy (%)" in df.index
+    for prefix in (
+        "SW results",
+        "RT results",
+        "0.4RT 0.6SW results",
+        "0.6RT 0.4SW results",
+    ):
+        assert any(str(c).startswith(prefix) for c in df.columns), f"missing columns for {prefix}"

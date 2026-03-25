@@ -1,6 +1,8 @@
 # Benefits of Varying Navigation Strategies in Teams of Robots
 
-**Webots-based multi-robot maze experiments comparing route-following (RT) versus spike-wave survey (SW) planning, homogeneous teams versus mixed strategy fractions, with per-trial metrics rolled up in `BOV.csv`.**
+**Webots multi-robot maze experiments comparing route-following (RT) versus spike-wave survey (SW) planning, homogeneous teams versus mixed RT/SW population fractions, with trial metrics aggregated into `BOV.csv`.**
+
+**Code ↔ paper:** This repo holds the **C++ Webots controller, world assets, and log layout** used to run the simulations reported in the Springer chapter below; **`BOV.csv` is produced offline by `Make_CSV.py`** from those logs. Interpretations, statistics, and any conditions not present in the committed spreadsheet belong in the **paper**, not the README.
 
 [![Publication DOI](https://img.shields.io/badge/Publication-Springer-blue)](https://doi.org/10.1007/978-3-031-71533-4_5) · **Demo:** [YouTube — simulation overview](https://www.youtube.com/watch?v=vQg6a5GYKL8)
 
@@ -15,20 +17,21 @@
 
 - **Problem:** Quantify how **team-level navigation behavior** changes when robots do not all use the same planning style in a shared maze (mission time, coverage-style signals, and obstacle / interaction counts).
 - **What “varying navigation strategies” means here:** Each robot is assigned a **Route (RT)** mode (path-following along predefined structure) or a **Survey (SW)** mode (spike-wave / shortest-path-style planning with obstacle avoidance); **mixed teams** fix a population fraction of RT vs SW (e.g. 40%/60%, 60%/40%) rather than everyone identical.
-- **Versus baseline:** Pure RT-only and SW-only teams are the **homogeneous baselines**; mixed populations and a human-inspired high-RT mix are **contrasts** to those extremes under the same world and goal protocol.
+- **Versus baseline:** **Homogeneous** RT-only and SW-only teams are the clearest baselines; **heterogeneous** teams vary the RT/SW **population fraction** (e.g. 40/60, 60/40). The chapter also discusses other mixes (e.g. a high-RT, human-inspired split); **the committed `BOV.csv` columns list exactly which strategy families are in this aggregate** (four prefixes: `SW results`, `RT results`, `0.4RT 0.6SW results`, `0.6RT 0.4SW results`).
 - **Observed pattern (qualitative):** In this study’s Webots setup, **SW-heavy teams tend to finish faster** on average while **RT-heavy patterns tend to show higher area-occupancy-style coverage**; **mixed splits fall between** the pure modes on these axes (see the chapter for definitions, statistics, and discussion).
 
 ## Results Snapshot
 
-![Mean mission time for 5-robot trials by strategy, computed from BOV.csv](figures/bov-mean-time-5robot.svg)
+![Mean mission time for 5-robot trials by strategy, from PR2Maze/controllers/SpikeWave/BOV.csv](figures/bov-mean-time-5robot.svg)
 
-The figure plots the **mean of every 5-robot column** in `BOV.csv` under “Time taken (s)” for each strategy group (SW, two mixed splits, RT). It is a **descriptive snapshot** of the shipped aggregate spreadsheet, not a substitute for the paper’s full analysis.
+Bars are the **mean of all `Time taken (s)` cells** whose column names include **`5Robot`**, grouped by the **`BOV.csv` column prefix** (pure SW, two mixed fractions, pure RT). The metric is the **simulation-reported “time to visit all goals”** line from each robot’s `outputLog*.txt`. This is a **descriptive illustration** of the committed spreadsheet only, not a statistical result by itself.
 
 ## Reproducibility Note
 
-- **Raw per-trial logs** (`outputLog*.txt`, occupancy grids, etc.) are **not stored in this repository** (they are large and were produced by Webots runs).
-- **To regenerate them:** Run the simulation as in **Quickstart** below so that `PR2Maze/controllers/SpikeWave/Results/<condition>/…` is populated, then run `Make_CSV.py` to rebuild `BOV.csv`.
-- **Optional archive:** If a Zenodo (or similar) bundle of raw logs is published later, this README can link it here; there is **no separate download URL yet**.
+- **Raw per-trial logs** (`outputLog*.txt`, occupancy grids, etc.) are **not in git** (large; produced by Webots). A normal clone still includes **`PR2Maze/controllers/SpikeWave/BOV.csv`** as the bundled aggregate.
+- **Regenerate logs:** Run Webots as in **Quickstart** so `PR2Maze/controllers/SpikeWave/Results/<condition>/…` exists (that path is **gitignored** once created).
+- **Regenerate `BOV.csv`:** After logs exist, run `Make_CSV.py` (Quickstart, step 5). By default this overwrites `BOV.csv` beside the script; use `--output` to write elsewhere.
+- **Optional archive:** No separate download of raw logs is linked yet; a Zenodo (or similar) bundle could be added later without changing the code layout.
 
 ## What this repository contains
 
@@ -47,7 +50,7 @@ The figure plots the **mean of every 5-robot column** in `BOV.csv` under “Time
 1. **Route (RT)** — follow predefined routes.  
 2. **Survey (SW)** — shortest-path style traversal with obstacle avoidance (spike-wave planner).  
 3. **Mixed teams** — e.g. `0.4RT 0.6SW`, `0.6RT 0.4SW` population splits.  
-4. **Human-inspired mix** — e.g. `0.9RT 0.1SW`.
+4. **Human-inspired mix** — e.g. `0.9RT 0.1SW` (see chapter; may require a matching `Results/` subtree and rerun of `Make_CSV.py` to appear in a fresh `BOV.csv`).
 
 Reported qualitative outcomes in the publication: SW tends to reduce mission time; RT tends to increase environment coverage; mixed policies trade off coverage and time; strategy variability can benefit team-level behavior (see paper for definitions and statistics).
 
@@ -63,7 +66,7 @@ flowchart LR
     W[empty.wbt]
     C[SpikeWave.cpp controller]
   end
-  subgraph analysis["Analysis"]
+  subgraph analysis["Post-processing (offline)"]
     PY[Make_CSV.py]
     CSV[BOV.csv]
     ML[MATLAB spikeWave.m]
@@ -76,9 +79,9 @@ flowchart LR
   ML -.->|algorithm reference| C
 ```
 
-- **Simulation:** Each robot runs the `SpikeWave` controller, which integrates lidar, odometry, and the spike-based planner, writes `outputLog*` and occupancy grids under a strategy-labeled results tree.  
+- **Simulation (C++ / Webots):** Each robot runs the `SpikeWave` controller (lidar, odometry, spike-based planner); it writes `outputLog*` and occupancy grids under a strategy-labeled `Results/` tree. **Python does not run in the loop** — it only aggregates completed logs.  
 - **Goal files:** `AssignedGoals*.txt`, `Sources.txt`, `Goals.txt`, and `RobotList.txt` in `PR2Maze/controllers/` configure starts and goals.  
-- **Post-processing:** `Make_CSV.py` walks `Results/<strategy>/Result {1,3,5}/<trial>/`, parses logs, and writes `BOV.csv`.
+- **Post-processing (Python):** `Make_CSV.py` walks `Results/<strategy>/Result {1,3,5}/<trial>/`, parses logs, and writes `BOV.csv`.
 
 ## Requirements
 
@@ -126,6 +129,12 @@ Or from the repo root:
 
 ```bash
 python PR2Maze/controllers/SpikeWave/Make_CSV.py --spike-dir PR2Maze/controllers/SpikeWave -v
+```
+
+Custom output path (keeps the committed `BOV.csv` untouched for comparison):
+
+```bash
+python PR2Maze/controllers/SpikeWave/Make_CSV.py --spike-dir PR2Maze/controllers/SpikeWave --output PR2Maze/controllers/SpikeWave/BOV.regenerated.csv -v
 ```
 
 ### 6. Python tests
