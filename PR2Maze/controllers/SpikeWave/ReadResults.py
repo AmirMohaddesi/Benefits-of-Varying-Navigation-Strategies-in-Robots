@@ -1,17 +1,39 @@
-import os
-import pandas as pd
-header = ['Robot Number','number of goals assigned','Time taken','Number of wall obstacles','Number of Robot obstacles','']
-def findfiles (path, filter):
-    for root, dirs, files in os.walk(path):
-        for file in files:
-            yield os.path.join(root, file)
+"""
+Utility to scan a ``Results`` tree for ``AssignedGoals*.txt`` files and report paths.
 
-for textfile in findfiles(r'C:\Users\Amix\Desktop\Project\PR2Maze\controllers\SpikeWave\Results', '*.txt'):
-##    print(textfile);
-    filename = os.path.basename(textfile)
-    if filename.find('Assigned'):
-        count = 0;
-        f = pd.read_csv(textfile, sep=" ")
-        for i in f:
-            count+=1
-        print(count);
+Example (from ``SpikeWave`` after restoring ``Results/``):
+
+    python ReadResults.py --root Results
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=Path(__file__).resolve().parent / "Results",
+        help="Directory to search recursively (default: ./Results next to this script).",
+    )
+    args = parser.parse_args(argv)
+    root: Path = args.root
+    if not root.is_dir():
+        print(f"Directory not found: {root}", file=sys.stderr)
+        return 1
+    matches = sorted(root.rglob("AssignedGoals*.txt"))
+    if not matches:
+        print(f"No AssignedGoals*.txt files under {root}")
+        return 0
+    for path in matches:
+        print(path)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

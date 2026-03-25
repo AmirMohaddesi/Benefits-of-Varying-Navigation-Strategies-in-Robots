@@ -1,0 +1,3 @@
+# Python tooling for analysis scripts under PR2Maze/controllers/SpikeWave/
+pandas==2.2.3
+pytest==8.3.4

@@ -1,0 +1,34 @@
+# Webots / C++ controller build outputs
+**/build/
+*.exe
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.d
+
+# Archives and bundles (regenerate or store via releases if needed)
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+.env
+
+# MATLAB
+*.asv
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Simulation run outputs (regenerate with Webots; aggregated BOV.csv stays tracked)
+PR2Maze/controllers/SpikeWave/Results/
